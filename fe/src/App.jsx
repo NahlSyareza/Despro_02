@@ -1,19 +1,36 @@
-import { useState } from "react"
-import Navigation from "./components/Navigation"
-import MealPlanner from "./pages/MealPlanner"
-import Analytics from "./pages/Analytics"
-import Overview from "./pages/Overview"
-import "./App.css"
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import Navigation from "./components/Navigation";
+import MealPlanner from "./pages/MealPlanner";
+import Analytics from "./pages/Analytics";
+import Overview from "./pages/Overview";
+import Feedback from "./pages/Feedback";
+import "./App.css";
 
-function App() {
-  const [currentPage, setCurrentPage] = useState("meal-planner")
+function Layout() {
+  const location = useLocation();
+  const hideNav = location.pathname === "/feedback";
 
   return (
     <div className="app">
-      <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
-      <main className="main-content">{currentPage === "meal-planner" ? <MealPlanner /> : currentPage === "analytics" ? <Analytics/> : <Overview />}</main>
+      {!hideNav && <Navigation />}
+
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<Overview />} />
+          <Route path="/overview" element={<Overview />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/meal-planner" element={<MealPlanner />} />
+          <Route path="/feedback" element={<Feedback />} />
+        </Routes>
+      </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default function App() {
+  return (
+    <Router>
+      <Layout />
+    </Router>
+  );
+}
