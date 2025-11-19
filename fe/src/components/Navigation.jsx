@@ -1,41 +1,57 @@
-import { Bell } from "lucide-react"
+import { NavLink, useLocation } from "react-router-dom";
+import { Bell } from "lucide-react";
 
-export default function Navigation({ currentPage, setCurrentPage }) {
+export default function Navigation() {
+  const location = useLocation();
+
+  const isOverviewActive =
+    location.pathname === "/" || location.pathname === "/overview";
+
   return (
     <nav className="navigation">
       <div className="nav-container">
+        {/* LEFT LOGO */}
         <div className="nav-left">
           <div className="logo">
-            <span className="logo-icon ">MBG</span>
+            <span className="logo-icon">MBG</span>
             <span className="logo-text -ml-1">NUTRITION DATA</span>
           </div>
         </div>
 
+        {/* NAV TABS */}
         <div className="nav-tabs">
-          <button
-            className={`nav-tab ${currentPage === "overview" ? "active" : ""}`}
-            onClick={() => setCurrentPage("overview")}
+          <NavLink
+            to="/overview"
+            className={`nav-tab ${isOverviewActive ? "active" : ""}`}
           >
             Overview
-          </button>
-          <button
-            className={`nav-tab ${currentPage === "analytics" ? "active" : ""}`}
-            onClick={() => setCurrentPage("analytics")}
+          </NavLink>
+
+          <NavLink
+            to="/analytics"
+            className={({ isActive }) =>
+              `nav-tab ${isActive ? "active" : ""}`
+            }
           >
             Analytics
-          </button>
-          <button
-            className={`nav-tab ${currentPage === "meal-planner" ? "active" : ""}`}
-            onClick={() => setCurrentPage("meal-planner")}
+          </NavLink>
+
+          <NavLink
+            to="/meal-planner"
+            className={({ isActive }) =>
+              `nav-tab ${isActive ? "active" : ""}`
+            }
           >
             Meal Planner
-          </button>
+          </NavLink>
         </div>
 
+        {/* RIGHT ICONS */}
         <div className="nav-right">
           <button className="icon-button">
             <Bell color="#7b5eea" fill="#7b5eea" />
           </button>
+
           <button className="rounded-full overflow-hidden w-12 h-12">
             <img
               src="/prabowo.jpg"
@@ -43,10 +59,8 @@ export default function Navigation({ currentPage, setCurrentPage }) {
               className="w-full h-full object-cover"
             />
           </button>
-
-
         </div>
       </div>
     </nav>
-  )
+  );
 }

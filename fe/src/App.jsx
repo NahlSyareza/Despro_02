@@ -1,21 +1,27 @@
-// src/App.jsx
 import { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
+
 import Navigation from "./components/Navigation";
 import MealPlanner from "./pages/MealPlanner";
 import Analytics from "./pages/Analytics";
-import Review from "./pages/Review";
 import Overview from "./pages/Overview";
+import Feedback from "./pages/Feedback";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+
 import "./App.css";
 
-function App() {
-  const [currentPage, setCurrentPage] = useState("overview");
-  const [authStage, setAuthStage] = useState("signin");
+function AppContent() {
+  const [authStage, setAuthStage] = useState("signin"); // "signin" | "signup" | "app"
+  const location = useLocation();
 
   const handleSignInSuccess = () => {
     setAuthStage("app");
-    setCurrentPage("overview");
   };
 
   const handleSignUpSuccess = () => {
@@ -40,23 +46,29 @@ function App() {
     );
   }
 
+  const hideNav = location.pathname === "/feedback";
+
   return (
     <div className="app">
-      <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
+      {!hideNav && <Navigation />}
 
       <main className="main-content">
-        {currentPage === "meal-planner" ? (
-          <MealPlanner />
-        ) : currentPage === "analytics" ? (
-          <Analytics />
-        ) : currentPage === "review" ? (
-          <Review />
-        ) : (
-          <Overview />
-        )}
+        <Routes>
+          <Route path="/" element={<Overview />} />
+          <Route path="/overview" element={<Overview />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/meal-planner" element={<MealPlanner />} />
+          <Route path="/feedback" element={<Feedback />} />
+        </Routes>
       </main>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}
