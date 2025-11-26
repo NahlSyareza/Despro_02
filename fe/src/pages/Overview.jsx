@@ -3,11 +3,23 @@ import { useEffect, useState } from "react";
 import { StatCard } from "@/components/cards/StatCard";
 import { OverviewRating } from "@/components/charts/OverviewRating";
 import { OverviewNutrition } from "@/components/charts/OverviewNutrition";
+import api_url from "../util/url";
 
 const USE_MOCK = true;
 
 export default function OverviewPage() {
-  const [kpis, setKpis] = useState(null);
+  const [kpis, setKpis] = useState({
+    mealsAnalyzed: 1234,
+    feedbackRate: 73.8,
+    averageRating: 4.6,
+    nutritionCompliance: 71.6,
+    deltas: {
+      mealsAnalyzed: 1.47,
+      feedbackRate: -0.59,
+      averageRating: -3.4,
+      nutritionCompliance: 11.22,
+    },
+  });
   const [ratings, setRatings] = useState([]);
   const [quality, setQuality] = useState([]);
 
@@ -56,6 +68,41 @@ export default function OverviewPage() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    api_url
+      // HARDCODED DATE FIRST!
+      .get("/review/average_rating/2025-11-17")
+      .then((r) => {
+        const res = r.data;
+        const avg = res.payload[0].avg;
+        console.log(res.payload[0].avg);
+
+        setKpis((p) => ({
+          ...p,
+          averageRating: Math.round(avg * 10) / 10,
+        }));
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+
+    api_url
+      .get("/review/overall_rating_dy/2025-11-17")
+      .then((r) => {
+        const res = r.data;
+        const payload = res.payload;
+        const fmtPayload = payload.map(({ reting: rating, ...rest }) => ({
+          rating,
+          ...rest,
+        }));
+        console.log(fmtPayload);
+        setRatings(fmtPayload);
+      })
+      .catch((e) => {
+        console.error(e);
+      });
   }, []);
 
   return (

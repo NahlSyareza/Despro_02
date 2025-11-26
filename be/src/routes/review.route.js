@@ -8,5 +8,6 @@ router.get("/get_recent", c.getRecent);
 router.post("/mockingbird/:nis", c.mockingbird);
 router.get("/get_all_rating", c.getAllRating);
 router.get("/average_rating/:date", c.averageRating);
+router.get("/overall_rating_dy/:date", c.overallRatingDy);
 
 module.exports = router;

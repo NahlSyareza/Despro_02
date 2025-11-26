@@ -54,8 +54,8 @@ export function OverviewRating({ ratings }) {
             <YAxis
               yAxisId="left"
               type="number"
-              domain={[50, 200]}
-              ticks={[50, 100, 150, 200]}
+              domain={[0, 25]}
+              ticks={[0, 25]}
               tick={{ fill: COLORS.grayText, fontSize: 14 }}
               tickLine={false}
               axisLine={false}
@@ -65,7 +65,7 @@ export function OverviewRating({ ratings }) {
               yAxisId="rightLabel"
               orientation="right"
               type="number"
-              domain={[50, 200]}
+              domain={[0, 25]}
               tick={false}
               axisLine={false}
             >

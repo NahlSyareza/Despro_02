@@ -123,8 +123,8 @@ const averageRating = async (req, res) => {
   }
 };
 
-const getDailyRatingDetail = async (req, res) => {
-  const { date } = req.param;
+const overallRatingDy = async (req, res) => {
+  const { date } = req.params;
 
   try {
     const query = await db.query(
@@ -165,4 +165,5 @@ module.exports = {
   mockingbird,
   getAllRating,
   averageRating,
+  overallRatingDy,
 };

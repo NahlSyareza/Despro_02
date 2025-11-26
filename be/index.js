@@ -2,14 +2,14 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
-const review = require("./routes/review.route");
-const vendor = require("./routes/vendor.route");
-const tray = require("./routes/tray.route");
-const menu = require("./routes/menu.route");
+const review = require("./src/routes/review.route");
+const vendor = require("./src/routes/vendor.route");
+const tray = require("./src/routes/tray.route");
+const menu = require("./src/routes/menu.route");
 
 const app = express();
 
-const PORT = 6060;
+const PORT = 2001;
 
 app.use(cors());
 app.use(express.json());
