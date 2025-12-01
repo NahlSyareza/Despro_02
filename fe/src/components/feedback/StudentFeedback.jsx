@@ -1,52 +1,53 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Star } from "lucide-react"
 
-const feedbacks = [
-    {
-        id: 1,
-        name: "Tray_ID 1",
-        rating: 5,
-        date: "25/10/2025",
-        text: "Makanannya enak, bumbu ayamnya meresap tapi nasinya kebanyakan jadi lauknya habis duluan.",
-    },
-    {
-        id: 2,
-        name: "Tray_ID 2",
-        rating: 5,
-        date: "25/10/2025",
-        text: "Makanannya enak, bumbu ayamnya meresap tapi nasinya kebanyakan jadi lauknya habis duluan. Sayurnya enak, buahnya kurang fresh. Next ikan ya wok",
-    },
-    {
-        id: 3,
-        name: "Tray_ID 3",
-        rating: 3,
-        date: "25/08/2025",
-        text: "Lauknya sedikit",
-    },
-    {
-        id: 4,
-        name: "Tray_ID 3",
-        rating: 3,
-        date: "25/08/2025",
-        text: "Lauknya sedikit",
-    },
-    {
-        id: 5,
-        name: "Tray_ID 3",
-        rating: 3,
-        date: "25/08/2025",
-        text: "Lauknya sedikit",
-    },
-    {
-        id: 6,
-        name: "Tray_ID 3",
-        rating: 3,
-        date: "25/08/2025",
-        text: "Lauknya sedikit",
-    },
-]
+// const feedbacks = [
+//     {
+//         id: 1,
+//         name: "Tray_ID 1",
+//         rating: 5,
+//         date: "25/10/2025",
+//         text: "Makanannya enak, bumbu ayamnya meresap tapi nasinya kebanyakan jadi lauknya habis duluan.",
+//     },
+//     {
+//         id: 2,
+//         name: "Tray_ID 2",
+//         rating: 5,
+//         date: "25/10/2025",
+//         text: "Makanannya enak, bumbu ayamnya meresap tapi nasinya kebanyakan jadi lauknya habis duluan. Sayurnya enak, buahnya kurang fresh. Next ikan ya wok",
+//     },
+//     {
+//         id: 3,
+//         name: "Tray_ID 3",
+//         rating: 3,
+//         date: "25/08/2025",
+//         text: "Lauknya sedikit",
+//     },
+//     {
+//         id: 4,
+//         name: "Tray_ID 3",
+//         rating: 3,
+//         date: "25/08/2025",
+//         text: "Lauknya sedikit",
+//     },
+//     {
+//         id: 5,
+//         name: "Tray_ID 3",
+//         rating: 3,
+//         date: "25/08/2025",
+//         text: "Lauknya sedikit",
+//     },
+//     {
+//         id: 6,
+//         name: "Tray_ID 3",
+//         rating: 3,
+//         date: "25/08/2025",
+//         text: "Lauknya sedikit",
+//     },
+// ]
 
-export function StudentFeedback() {
+export function StudentFeedback({feedbacks}) {
+    console.log("student feedback:", feedbacks);
     return (
         <Card className="h-full max-h-[400px]">
             <CardHeader>

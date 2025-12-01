@@ -72,8 +72,8 @@ export default function OverviewPage() {
 
   useEffect(() => {
     api_url
-      // HARDCODED DATE FIRST!
-      .get("/review/average_rating/2025-11-17")
+      // HARDCODED DATE FIRST ==> later change to current date!
+      .get("/review/average_rating/2025-12-01")
       .then((r) => {
         const res = r.data;
         const avg = res.payload[0].avg;
@@ -89,7 +89,7 @@ export default function OverviewPage() {
       });
 
     api_url
-      .get("/review/overall_rating_dy/2025-11-17")
+      .get("/review/overall_rating_dy/2025-12-01")
       .then((r) => {
         const res = r.data;
         const payload = res.payload;
