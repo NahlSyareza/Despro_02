@@ -91,7 +91,7 @@ export default function Analytics() {
           calories: item.calories,
           fat: item.fat ,
           protein: item.protein,
-          carbs: item.carbs,
+          carbs: item.carbohydrate,
           //image still not mapped yet
         }));
 
