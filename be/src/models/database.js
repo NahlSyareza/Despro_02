@@ -10,6 +10,13 @@ const pool = new Pool({
   port: 5432,
 });
 
+console.log("Connected to DB:", {
+  user: process.env.PGUSER,
+  host: process.env.PGHOST,
+  db: process.env.PGDATABASE,
+});
+
+
 module.exports = {
   query: (text, params) => pool.query(text, params),
 };

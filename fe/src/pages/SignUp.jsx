@@ -1,26 +1,80 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import api_url from "@/util/url";
 
 export default function SignUpPage({ onSignUpSuccess, onGoToSignIn }) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [agree, setAgree] = useState(false);
+  // const [agree, setAgree] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
   const isEmailValid = emailRegex.test(email);
   const isPasswordValid = password.length >= 8;
   const isConfirmValid = confirm.length > 0 && confirm === password;
-  const canSubmit = isEmailValid && isPasswordValid && isConfirmValid && agree;
+  const canSubmit = isEmailValid && isPasswordValid && isConfirmValid;
 
   const onSubmit = (e) => {
     e.preventDefault();
     if (!canSubmit) return;
+
+    const body = {
+      email: email,
+      password: password,
+    }
+
+    setLoading(true)
+     api_url.post("/vendor/register", body)
+      .then(() => {
+        navigate("/signin");
+      })
+      .catch((e) => {
+        console.error("Error: ", e.response.data.msg);
+        toast.error(e.response.data.msg, {
+      position: "bottom-right"
+    });
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+
     console.log("sign up success", { email });
 
     if (onSignUpSuccess) onSignUpSuccess();
   };
+
+  // const onSubmit = (e) => {
+  //   console.log("password: ", password)
+  //   e.preventDefault();
+  //   const body = {
+  //     // username: email,
+  //     password: password,
+  //   };
+
+  //   setLoading(true)
+  //    api_url.post("/vendor/login", body)
+  //     .then((r) => {
+  //       console.log("Login data:", r.data);
+  //     })
+  //     .catch((e) => {
+  //       console.error(e);
+  //     })
+  //     .finally(() => {
+  //       setLoading(false);
+  //       navigate("/overview");
+  //     });
+
+  //   console.log("login success", { email, remember });
+
+  //   if (onSignInSuccess) {
+  //     onSignInSuccess({ email });
+  //   }
+  // };
 
   return (
     <div className="min-h-screen w-full bg-white relative overflow-hidden">
@@ -212,7 +266,7 @@ export default function SignUpPage({ onSignUpSuccess, onGoToSignIn }) {
               {/* Submit */}
               <button
                 type="submit"
-                disabled={!canSubmit}
+                disabled={!canSubmit || loading}
                 className={
                   "mt-2 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-base font-semibold text-white shadow-sm focus:outline-none focus:ring-4 " +
                   (canSubmit
@@ -220,7 +274,7 @@ export default function SignUpPage({ onSignUpSuccess, onGoToSignIn }) {
                     : "bg-gray-300 cursor-not-allowed")
                 }
               >
-                Create account
+                {loading ? "Creating account..." : "Create account"}
               </button>
 
               <p className="pt-1 text-sm text-gray-600 text-center">

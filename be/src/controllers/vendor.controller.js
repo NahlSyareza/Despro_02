@@ -2,7 +2,7 @@ const db = require("../models/database");
 const crypto = require("crypto");
 
 const register = async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
   try {
     const hash = crypto.createHash("sha256");
@@ -11,7 +11,7 @@ const register = async (req, res) => {
 
     const query = await db.query(
       "INSERT INTO vendor(username, password) VALUES ($1,$2) RETURNING *;",
-      [username, hashedPassword]
+      [email, hashedPassword]
     );
 
     return res.status(200).json({
@@ -27,20 +27,21 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
   try {
     const hash = crypto.createHash("sha256");
     hash.update(password);
     const hashedPassword = hash.digest("hex");
 
-    const slct = await db.query("SELECT * FROM vendor WHERE password=$1", [
+    const slct = await db.query("SELECT * FROM vendor WHERE username = $1 AND password=$2", [
+      email,
       hashedPassword,
     ]);
 
     if (slct.rows.length < 1) {
-      return res.status(200).json({
-        msg: "Username or password wrong!",
+      return res.status(404).json({
+        msg: "Email or password wrong!",
         payload: [],
       });
     }

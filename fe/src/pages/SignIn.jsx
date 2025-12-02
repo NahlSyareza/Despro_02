@@ -1,17 +1,52 @@
+import React from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import api_url from "@/util/url";
+
 
 export default function SignInPage({ onSignInSuccess, onGoToSignUp }) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [loading, setLoading] = useState(false);
+  // const [user, setUser] = useState();
+
+
 
   const onSubmit = (e) => {
+    console.log("password: ", password + " email: " + email);
     e.preventDefault();
+    const body = {
+      email: email,
+      password: password,
+    };
+
+    setLoading(true)
+     api_url.post("/vendor/login", body)
+      .then((r) => {
+        console.log("Login data:", r.data);
+        navigate("/overview");
+      })
+      .catch((e) => {
+        console.error("Error: ", e.response.data.msg);
+        toast.error(e.response.data.msg, {
+      position: "bottom-right"
+    });
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     console.log("login success", { email, remember });
 
-    if (onSignInSuccess) onSignInSuccess();
+    if (onSignInSuccess) {
+      onSignInSuccess({ email });
+    }
   };
 
   return (
@@ -138,12 +173,13 @@ export default function SignInPage({ onSignInSuccess, onGoToSignUp }) {
               </div>
 
               {/* Submit */}
-              <button
+              <Button
                 type="submit"
-                className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-[#7B5EEA] px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[#6a4fea] focus:outline-none focus:ring-4 focus:ring-[#7B5EEA]/40"
+                disabled={loading}
+                className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-[#7B5EEA] px-4 py-6 text-base font-semibold text-white shadow-sm transition hover:bg-[#6a4fea] focus:outline-none focus:ring-4 focus:ring-[#7B5EEA]/40"
               >
-                Sign in
-              </button>
+                {loading ? "Signing in ..." : "Sign In"}
+              </Button>
 
               {/* Sign Up */}
               <p className="text-center text-sm text-gray-600">
