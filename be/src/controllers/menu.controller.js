@@ -21,7 +21,8 @@ const createMenu = async (req, res) => {
 
     const getMenus = await db.query(
       "SELECT * FROM menu WHERE date=$1 OR date=$2",
-      [kinou, ototoi]
+      // [kinou, ototoi]
+      ["2025-11-25", "2025-11-24"]
     );
 
     const getFoods = await db.query("SELECT name, class FROM food_material");
@@ -95,13 +96,27 @@ const createMenu = async (req, res) => {
 
     console.log(saigo);
 
+    return res.status(200).json({
+      msg: "Ok",
+      payload: finalLesson
+    });
+  } catch (e) {
+    console.error(e.message);
+    return res.status(500).send("Server error");
+  }
+};
+
+const saveSelectedMenu = async (req, res) => {
+  const { date, foods } = req.body;
+
+  try {
     const lastInsert = await db.query(
       "INSERT INTO menu (date, foods) VALUES ($1,$2) RETURNING *",
-      [kyou, saigo]
+      [date, foods]
     );
 
     return res.status(200).json({
-      msg: "Ok",
+      msg: "Successfully saved selected menu",
       payload: lastInsert.rows,
     });
   } catch (e) {
@@ -110,6 +125,8 @@ const createMenu = async (req, res) => {
   }
 };
 
+
 module.exports = {
   createMenu,
+  saveSelectedMenu,
 };

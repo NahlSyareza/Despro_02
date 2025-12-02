@@ -1,8 +1,8 @@
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
-export default function MenuVariants({ selectedDay, setSelectedDay, selectedPlan, setSelectedPlan, menuItems }) {
+export default function MenuVariants({ selectedDay, setSelectedDay, selectedPlan, setSelectedPlan, menuItems, isDayDisabled }) {
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-  const nutrient = ["Carbs", "Protein", "Vegetables", "Fruit", "Drink"]
+  const nutrient = ["Carbs", "Protein 1", "Protein 2", "Vegetable", "Fruit"]
 
   return (
     <section className="menu-variants">
@@ -48,7 +48,8 @@ export default function MenuVariants({ selectedDay, setSelectedDay, selectedPlan
             <button
               key={day}
               className={`day-btn ${selectedDay === day ? "active" : ""}`}
-              onClick={() => setSelectedDay(day)}
+              disabled={isDayDisabled(day)}
+              onClick={() => !isDayDisabled(day) && setSelectedDay(day)}
             >
               {day}
             </button>
@@ -65,8 +66,11 @@ export default function MenuVariants({ selectedDay, setSelectedDay, selectedPlan
               <li key={idx} className="flex justify-between">
                 <p className="font-medium text-gray-700 text-left w-1/2">{nutrient}:</p>
                 <p className="text-gray-900 font-semibold text-left w-1/5">
-                  {menuItems[selectedDay]?.[selectedPlan]?.[idx]
-                    ?? "-"}
+                  {menuItems && menuItems.length > 0
+  ? (menuItems[parseInt(selectedPlan.split(" ")[1], 10) - 1]?.[idx]?.name || "-")
+  : "-"
+}
+
                 </p>
               </li>
             ))}

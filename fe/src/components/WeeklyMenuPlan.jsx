@@ -32,15 +32,12 @@ export default function WeeklyMenuPlan({ weeklyPlan }) {
               <h4 className="day-header">{day.toUpperCase()}</h4>
 
               <ul className="day-menu-items ">
-                {Object.entries(dayData).map(([category, items]) => {
-                  if (category === "day") return null;
-                  return (
+              {Object.entries(dayData).map(([category, items]) => {
+  if (!Array.isArray(items)) return null; // only display food arrays
 
-                    <p>
-                      {items.join(", ")}
-                    </p>
-                  );
-                })}
+  return <p>{items.join(", ")}</p>;
+})}
+
               </ul>
             </div>
           );
