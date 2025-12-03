@@ -1,20 +1,21 @@
 import { Button } from "./ui/button"
 
 export default function SelectedMenu({ items, onConfirm}) {
+  console.log("SelectedMenu items:", items);
   const categoryColors = {
     Carbohydrate: "#fde4d0",
-    Protein: "#ffe0dbff",
-    Vegetables: "#e1fce1ff",
-    Fruit: "#fff6d3ff",
-    Drink: "#e4f0ffff",
+    "Protein 1": "#ffe0dbff",
+    "Protein 2": "#e1fce1ff",
+    Vegetables: "#fff6d3ff",
+    Fruit: "#e4f0ffff",
   }
 
   const textColors = {
     Carbohydrate: "#c2420e",
-    Protein: "#bf2d2d",
-    Vegetables: "#1c8442",
-    Fruit: "#b45309",
-    Drink: "#2e6aeb",
+    "Protein 1": "#bf2d2d",
+    "Protein 2": "#1c8442",
+    Vegetables: "#b45309",
+    Fruit: "#2e6aeb",
   }
 
   return (

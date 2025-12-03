@@ -379,6 +379,10 @@
   display: flex;
 }
 
+.menu-item-weekly {
+  text-transform: capitalize;
+}
+
 .day-menu-items {
   list-style: none;
   font-size: 12px;

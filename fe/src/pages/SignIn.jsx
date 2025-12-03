@@ -29,8 +29,13 @@ export default function SignInPage({ onSignInSuccess, onGoToSignUp }) {
     setLoading(true)
      api_url.post("/vendor/login", body)
       .then((r) => {
-        console.log("Login data:", r.data);
+        console.log("Login data:", r.data.payload[0]);
+         if (onSignInSuccess) {
+      onSignInSuccess(r.data.payload[0]);
+    }
+
         navigate("/overview");
+
       })
       .catch((e) => {
         console.error("Error: ", e.response.data.msg);
@@ -44,9 +49,7 @@ export default function SignInPage({ onSignInSuccess, onGoToSignUp }) {
 
     console.log("login success", { email, remember });
 
-    if (onSignInSuccess) {
-      onSignInSuccess({ email });
-    }
+
   };
 
   return (

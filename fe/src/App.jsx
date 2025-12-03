@@ -35,10 +35,10 @@ function Layout() {
 
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<SignInPage onGoToSignUp={() => window.location.href = '/signup'} />} />
+          <Route path="/" element={<SignInPage onSignInSuccess={(data) => {setUser(data); showToastSignIn()}} onGoToSignUp={() => window.location.href = '/signup'} />} />
           <Route path="/overview" element={<Overview />} />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/meal-planner" element={<MealPlanner />} />
+          <Route path="/meal-planner" element={<MealPlanner user={user}/>} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/signin" element={<SignInPage onSignInSuccess={(data) => {setUser(data); showToastSignIn()}} onGoToSignUp={() => window.location.href = '/signup'} />} />
           <Route path="/signup" element={<SignUpPage onSignUpSuccess={() => showToastSignUp()} onGoToSignIn={() => window.location.href = '/signin'}/>} />

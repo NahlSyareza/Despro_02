@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import { Bell } from "lucide-react";
 
 export default function Navigation({user}) {
-  console.log("Navigation user:", user?.email);
+  console.log("Navigation user:", user.username);
   return (
     <nav className="navigation">
       <div className="nav-container">
@@ -43,7 +43,7 @@ export default function Navigation({user}) {
               transition-all duration-200
             ">
               <ul className="py-2">
-                <li className="px-4 py-2 ">{user?.email ?? "-"}</li>
+                <li className="px-4 py-2 ">{user?.username ?? "-"}</li>
                 <li className="px-4 py-2 hover:bg-[#dad1ffff] cursor-pointer">Log out</li>
               </ul>
             </div>

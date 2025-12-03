@@ -21,8 +21,8 @@ const createMenu = async (req, res) => {
 
     const getMenus = await db.query(
       "SELECT * FROM menu WHERE date=$1 OR date=$2",
-      // [kinou, ototoi]
-      ["2025-11-25", "2025-11-24"]
+      [kinou, ototoi]
+      // ["2025-11-25", "2025-11-24"]
     );
 
     const getFoods = await db.query("SELECT name, class FROM food_material");
@@ -107,12 +107,12 @@ const createMenu = async (req, res) => {
 };
 
 const saveSelectedMenu = async (req, res) => {
-  const { date, foods } = req.body;
+  const { date, foods, vendor_id} = req.body;
 
   try {
     const lastInsert = await db.query(
-      "INSERT INTO menu (date, foods) VALUES ($1,$2) RETURNING *",
-      [date, foods]
+      "INSERT INTO menu (date, foods, vendor_id) VALUES ($1,$2,$3) RETURNING *",
+      [date, foods, vendor_id]
     );
 
     return res.status(200).json({
@@ -126,7 +126,32 @@ const saveSelectedMenu = async (req, res) => {
 };
 
 
+const getMenuByVendor = async (req, res) => {
+  const { vendor_id } = req.params;
+
+  try {
+    const query = await db.query("SELECT * FROM menu WHERE vendor_id=$1",
+       [vendor_id]);
+
+    if (query.rows.length < 1) {
+      return res.status(200).json({
+        msg: "Menu not found!",
+        payload: [],
+      });
+    }
+
+    return res.status(200).json({
+      msg: "Menu retrieved!",
+      payload: query.rows,
+    });
+  } catch (e) {
+    console.error(e.message);
+    return res.status(500).send("Server error");
+  }
+};
+
 module.exports = {
   createMenu,
   saveSelectedMenu,
+  getMenuByVendor,
 };

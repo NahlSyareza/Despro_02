@@ -18,7 +18,47 @@ function getNextWeekdays(startDate, count = 5) {
   return result;
 }
 
-export default function MealPlanner() {
+function getWeekRange(date, offset = 0) {
+  // offset: 0 = current week, -1 = previous, 1 = next, etc.
+  const d = new Date(date);
+  // Find Monday of the week
+  console.log("spicles 1: ", d)
+  const day = (d.getDay() + 6) % 7;
+  console.log("spicles 2: ", day)
+  // const diffToMonday = (day === 0 ? -6 : 1) - day;
+  // console.log("spicles 3: ", diffToMonday)
+  d.setDate(d.getDate() - day + offset * 7);
+  console.log("spicles 4: ", d)
+  const monday = new Date(d);
+  console.log("spicles 5: ", monday)
+  const friday = new Date(d);
+  console.log("spicles 6: ", friday)
+  friday.setDate(friday.getDate() + 4);
+  console.log("spicles 7: ", friday)
+  return {
+    monday: monday.toISOString().split("T")[0],
+    friday: friday.toISOString().split("T")[0],
+  };
+}
+
+function groupMenusByWeek(menus) {
+  // menus: array of menu objects, each with a .date property (YYYY-MM-DD)
+  const weeks = {};
+  menus.forEach(menu => {
+    const date = new Date(menu.date);
+    const { monday, friday } = getWeekRange(date);
+
+    const weekKey = `${monday}_${friday}`;
+    if (!weeks[weekKey]) weeks[weekKey] = [];
+    weeks[weekKey].push(menu);
+  });
+  console.log("grouped weeks: ", weeks);
+  return weeks;
+}
+
+
+export default function MealPlanner({ user }) {
+  console.log("user on meal planner: ", user.vendor_id)
    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
   const [selectedDay, setSelectedDay] = useState("Monday")
@@ -26,6 +66,26 @@ export default function MealPlanner() {
   const [selectedMenuData, setSelectedMenuData] = useState({})
   const [weeklyMenuData, setWeeklyMenuData] = useState({})
   const [menuPlans, setMenuPlans] = useState([])
+  const [groupedMenus, setGroupedMenus] = useState({})
+
+
+  useEffect(() => {
+  api_url
+    .get(`menu/get_menu/${user.vendor_id}`)
+    .then((r) => {
+      const menus = r.data.payload;
+      const grouped = groupMenusByWeek(menus);
+      console.log("grouped menus from api: ", grouped);
+      console.log("menus from api: ", menus);
+      setGroupedMenus(grouped);
+    })
+    .catch((e) => {
+      console.error(e);
+    });
+}, [user.vendor_id]);
+
+console.log("let it go: ", groupedMenus)
+
 
   const weekdayDates = getNextWeekdays(new Date());
   const dayToDate = {
@@ -174,6 +234,7 @@ console.log("menu plans from api :", menuPlans);
     const body = {
     date,
     foods,
+    vendor_id: user.vendor_id
   };
 
 
@@ -181,7 +242,7 @@ console.log("menu plans from api :", menuPlans);
       .post("/menu/select_menu", body)
       .then((r) => {
         const res = r.data;
-        console.log("response tray:", res.payload);
+        console.log("response selected menu:", res.payload);
       })
       .catch((e) => {
         console.error(e);
@@ -199,6 +260,20 @@ console.log("menu plans from api :", menuPlans);
       },
     }));
   }
+
+  const [weekOffset, setWeekOffset] = useState(0);
+  const today = new Date();
+const { monday, friday } = getWeekRange(today, 0);
+const currentWeekKey = `${monday}_${friday}`;
+const currentWeekMenus = groupedMenus[currentWeekKey] || [];
+console.log("current week menus: ", currentWeekMenus);
+
+const prevWeekKey = (() => {
+  const { monday, friday } = getWeekRange(today, -1);
+  return `${monday}_${friday}`;
+})();
+const prevWeekMenus = groupedMenus[prevWeekKey] || [];
+console.log("previous week menus: ", prevWeekMenus);
 
 
   // const selectedMenuData = {
@@ -227,7 +302,13 @@ console.log("menu plans from api :", menuPlans);
             onConfirm={handleConfirmSelectedMenu} />
         </div>
       </div>
-      <WeeklyMenuPlan weeklyPlan={weeklyMenuData} />
+      <WeeklyMenuPlan
+  weekKey={currentWeekKey}
+  weekMenus={currentWeekMenus}
+  weekRange={{ monday, friday }}
+  setWeekOffset={setWeekOffset}
+  weekOffset={weekOffset}
+/>
     </div>
   )
 }
