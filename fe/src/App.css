@@ -379,7 +379,7 @@
   display: flex;
 }
 
-.menu-item-weekly {
+.capitalize-text {
   text-transform: capitalize;
 }
 

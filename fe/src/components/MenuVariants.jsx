@@ -65,7 +65,7 @@ export default function MenuVariants({ selectedDay, setSelectedDay, selectedPlan
             {nutrient.map((nutrient, idx) => (
               <li key={idx} className="flex justify-between">
                 <p className="font-medium text-gray-700 text-left w-1/2">{nutrient}:</p>
-                <p className="text-gray-900 font-semibold text-left w-1/5">
+                <p className="text-gray-900 font-semibold text-left w-1/5 capitalize-text">
                   {menuItems && menuItems.length > 0
   ? (menuItems[parseInt(selectedPlan.split(" ")[1], 10) - 1]?.[idx]?.name || "-")
   : "-"

@@ -29,7 +29,7 @@ export default function SelectedMenu({ items, onConfirm}) {
               {category}
             </div>
             {foods.map((food, idx) => (
-              <div key={idx} className={`h-10 font-semibold rounded-lg flex items-center px-3`} style={{ backgroundColor: categoryColors[category], color: textColors[category] }}>
+              <div key={idx} className={`h-10 font-semibold rounded-lg flex items-center px-3 capitalize-text`} style={{ backgroundColor: categoryColors[category], color: textColors[category] }}>
                 {food}
               </div>
             ))}

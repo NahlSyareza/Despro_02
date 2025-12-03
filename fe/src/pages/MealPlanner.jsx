@@ -4,6 +4,15 @@ import SelectedMenu from "@/components/SelectedMenu"
 import WeeklyMenuPlan from "@/components/WeeklyMenuPlan"
 import api_url from "@/util/url"
 
+
+function formatUTCDateToYMD(d) {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+
 function getNextWeekdays(startDate, count = 5) {
   const result = [];
   const day = new Date(startDate);
@@ -18,26 +27,30 @@ function getNextWeekdays(startDate, count = 5) {
   return result;
 }
 
-function getWeekRange(date, offset = 0) {
-  // offset: 0 = current week, -1 = previous, 1 = next, etc.
-  const d = new Date(date);
-  // Find Monday of the week
-  console.log("spicles 1: ", d)
-  const day = (d.getDay() + 6) % 7;
-  console.log("spicles 2: ", day)
-  // const diffToMonday = (day === 0 ? -6 : 1) - day;
-  // console.log("spicles 3: ", diffToMonday)
-  d.setDate(d.getDate() - day + offset * 7);
-  console.log("spicles 4: ", d)
-  const monday = new Date(d);
-  console.log("spicles 5: ", monday)
-  const friday = new Date(d);
-  console.log("spicles 6: ", friday)
-  friday.setDate(friday.getDate() + 4);
-  console.log("spicles 7: ", friday)
+function getWeekRange(dateArg, offset = 0) {
+  const d = dateArg instanceof Date ? new Date(dateArg.getTime()) : new Date(dateArg);
+
+  // work in UTC to avoid local timezone shifts
+  const utcYear = d.getUTCFullYear();
+  const utcMonth = d.getUTCMonth();
+  const utcDate = d.getUTCDate();
+
+  // create a UTC-only Date at 00:00 UTC of that day
+  const base = new Date(Date.UTC(utcYear, utcMonth, utcDate));
+
+  // Convert JS getUTCDay() so Monday = 0 ... Sunday = 6
+  const dayIndex = (base.getUTCDay() + 6) % 7;
+
+  // Move to Monday (UTC), apply week offset
+  const mondayUtc = new Date(base.getTime());
+  mondayUtc.setUTCDate(base.getUTCDate() - dayIndex + offset * 7);
+
+  const fridayUtc = new Date(mondayUtc.getTime());
+  fridayUtc.setUTCDate(mondayUtc.getUTCDate() + 4);
+
   return {
-    monday: monday.toISOString().split("T")[0],
-    friday: friday.toISOString().split("T")[0],
+    monday: formatUTCDateToYMD(mondayUtc),
+    friday: formatUTCDateToYMD(fridayUtc),
   };
 }
 
@@ -45,8 +58,8 @@ function groupMenusByWeek(menus) {
   // menus: array of menu objects, each with a .date property (YYYY-MM-DD)
   const weeks = {};
   menus.forEach(menu => {
-    const date = new Date(menu.date);
-    const { monday, friday } = getWeekRange(date);
+    // const date = new Date(menu.date);
+    const { monday, friday } = getWeekRange(menu.date);
 
     const weekKey = `${monday}_${friday}`;
     if (!weeks[weekKey]) weeks[weekKey] = [];
@@ -59,9 +72,13 @@ function groupMenusByWeek(menus) {
 
 export default function MealPlanner({ user }) {
   console.log("user on meal planner: ", user.vendor_id)
-   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-  const [selectedDay, setSelectedDay] = useState("Monday")
+
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const todayDate = new Date();
+const todayIdx = todayDate.getDay() - 1; // Monday=0, ..., Friday=4
+const defaultDay = todayIdx >= 0 && todayIdx < 5 ? days[todayIdx] : "Monday";
+const [selectedDay, setSelectedDay] = useState(defaultDay);
   const [selectedPlan, setSelectedPlan] = useState("Plan 1")
   const [selectedMenuData, setSelectedMenuData] = useState({})
   const [weeklyMenuData, setWeeklyMenuData] = useState({})
@@ -97,12 +114,13 @@ console.log("let it go: ", groupedMenus)
   };
 
   function isDayDisabled(day) {
-    const idx = days.indexOf(day);
-    if (idx === 0) return false;
-
-    const prev = days[idx - 1];
-    return !weeklyMenuData[prev];
-  }
+  const idx = days.indexOf(day);
+  if (idx < todayIdx) return true; // Disable days before today
+  if (idx === todayIdx) return false; // Today is always enabled
+  // For days after today, enable only if previous day is selected in weeklyMenuData
+  const prev = days[idx - 1];
+  return !weeklyMenuData[prev];
+}
 
   async function fetchDailyMenus() {
     try {
@@ -144,40 +162,6 @@ console.log("let it go: ", groupedMenus)
     setSelectedMenuData(getSelectedMenuObject(menu));
   }, [selectedPlan, menuPlans]);
 
-  // const menuItems = {
-  //   Monday: {
-  //     "Plan 1": ["Nasi", "Ayam Goreng Telur", "Orak-Arik Buncis Wortel", "Papaya", "Susu"],
-  //     "Plan 2": ["Nasi", "Ayam Bakar", "Sayur Asem", "Jeruk", "Air Putih"],
-  //     "Plan 3": ["Nasi Goreng", "Telur Dadar", "Tumis Kangkung", "Semangka", "Teh Manis"],
-  //     "Plan 4": ["Nasi", "Tempe Orek", "Capcay", "Melon", "Susu Kedelai"]
-  //   },
-  //   Tuesday: {
-  //     "Plan 1": ["Nasi", "Sempol Telur", "Capcay Bakso", "Papaya", "Tahu"],
-  //     "Plan 2": ["Nasi Uduk", "Ayam Goreng", "Sambal Goreng Kentang", "Pisang", "Air Putih"],
-  //     "Plan 3": ["Nasi", "Ikan Goreng", "Sayur Lodeh", "Melon", "Susu"],
-  //     "Plan 4": ["Nasi Goreng", "Sosis", "Tumis Bayam", "Jeruk", "Teh"]
-  //   },
-  //   Wednesday: {
-  //     "Plan 1": ["Nasi", "Ikan Kembung Goreng", "Tumis Kangkung", "Jeruk", "Susu"],
-  //     "Plan 2": ["Nasi Uduk", "Ayam Geprek", "Sayur Sop", "Semangka", "Air Putih"],
-  //     "Plan 3": ["Nasi", "Telur Ceplok", "Capcay", "Melon", "Teh Tawar"],
-  //     "Plan 4": ["Nasi Goreng", "Tempe Mendoan", "Sayur Bayam", "Pisang", "Susu"]
-  //   },
-  //   Thursday: {
-  //     "Plan 1": ["Nasi", "Telur Dadar", "Sayur Lodeh", "Jeruk", "Air Putih"],
-  //     "Plan 2": ["Nasi Goreng", "Sosis", "Tumis Kangkung", "Melon", "Susu"],
-  //     "Plan 3": ["Nasi", "Ayam Bakar", "Sayur Sop", "Pisang", "Teh"],
-  //     "Plan 4": ["Nasi Uduk", "Ikan Goreng", "Capcay", "Semangka", "Susu"]
-  //   },
-  //   Friday: {
-  //     "Plan 1": ["Nasi", "Telur Codok", "Tumis Labu Siam Wortel", "Melon", "Susu"],
-  //     "Plan 2": ["Nasi Goreng", "Sosis", "Tumis Bayam", "Jeruk", "Teh Manis"],
-  //     "Plan 3": ["Nasi", "Ayam Goreng", "Sayur Asem", "Semangka", "Air Putih"],
-  //     "Plan 4": ["Nasi Uduk", "Tempe Orek", "Sayur Sop", "Pisang", "Susu"]
-  //   }
-  // }
-
-
  useEffect(() => {
   const fetchMenus = async () => {
     try {
@@ -207,22 +191,6 @@ console.log("let it go: ", groupedMenus)
 
 
 console.log("menu plans from api :", menuPlans);
-
-  // useEffect(() => {
-  //   const arr = menuItems[selectedDay]?.[selectedPlan] || []
-  //   setSelectedMenuData(getSelectedMenuObject(arr))
-  // }, [selectedDay, selectedPlan])
-
-
-  // function handleConfirmSelectedMenu() {
-  //   setWeeklyMenuData(prev => ({
-  //     ...prev,
-  //     [selectedDay]: {
-  //       day: selectedDay,
-  //       ...selectedMenuData
-  //     }
-  //   }))
-  // }
 
    function handleConfirmSelectedMenu() {
     const date = dayToDate[selectedDay];
@@ -263,10 +231,12 @@ console.log("menu plans from api :", menuPlans);
 
   const [weekOffset, setWeekOffset] = useState(0);
   const today = new Date();
-const { monday, friday } = getWeekRange(today, 0);
+const { monday, friday } = getWeekRange(today, weekOffset);
 const currentWeekKey = `${monday}_${friday}`;
 const currentWeekMenus = groupedMenus[currentWeekKey] || [];
+console.log("current week blue: ", groupedMenus);
 console.log("current week menus: ", currentWeekMenus);
+console.log("current week key: ", currentWeekKey);
 
 const prevWeekKey = (() => {
   const { monday, friday } = getWeekRange(today, -1);
