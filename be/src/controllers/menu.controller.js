@@ -98,7 +98,7 @@ const createMenu = async (req, res) => {
 
     return res.status(200).json({
       msg: "Ok",
-      payload: finalLesson
+      payload: finalLesson,
     });
   } catch (e) {
     console.error(e.message);
@@ -107,7 +107,7 @@ const createMenu = async (req, res) => {
 };
 
 const saveSelectedMenu = async (req, res) => {
-  const { date, foods, vendor_id} = req.body;
+  const { date, foods, vendor_id } = req.body;
 
   try {
     const lastInsert = await db.query(
@@ -125,13 +125,32 @@ const saveSelectedMenu = async (req, res) => {
   }
 };
 
+const updateMenu = async (req, res) => {
+  const { menu_id, foods } = req.body;
+
+  try {
+    const lastInsert = await db.query(
+      "UPDATE menu SET foods=$2 WHERE menu_id = $1 RETURNING *",
+      [menu_id, foods]
+    );
+
+    return res.status(200).json({
+      msg: "Successfully updated menu",
+      payload: lastInsert.rows,
+    });
+  } catch (e) {
+    console.error(e.message);
+    return res.status(500).send("Server error");
+  }
+};
 
 const getMenuByVendor = async (req, res) => {
   const { vendor_id } = req.params;
 
   try {
-    const query = await db.query("SELECT * FROM menu WHERE vendor_id=$1",
-       [vendor_id]);
+    const query = await db.query("SELECT * FROM menu WHERE vendor_id=$1", [
+      vendor_id,
+    ]);
 
     if (query.rows.length < 1) {
       return res.status(200).json({
@@ -154,4 +173,5 @@ module.exports = {
   createMenu,
   saveSelectedMenu,
   getMenuByVendor,
+  updateMenu,
 };

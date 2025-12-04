@@ -1,8 +1,16 @@
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "./ui/button";
 
-export default function MenuVariants({ selectedDay, setSelectedDay, selectedPlan, setSelectedPlan, menuItems, isDayDisabled }) {
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-  const nutrient = ["Carbs", "Protein 1", "Protein 2", "Vegetable", "Fruit"]
+export default function MenuVariants({
+  selectedDay,
+  setSelectedDay,
+  selectedPlan,
+  setSelectedPlan,
+  menuItems,
+  isDayDisabled,
+}) {
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const nutrient = ["Carbs", "Protein 1", "Protein 2", "Vegetable", "Fruit"];
 
   return (
     <section className="menu-variants">
@@ -45,14 +53,14 @@ export default function MenuVariants({ selectedDay, setSelectedDay, selectedPlan
             <ChevronLeft />
           </button>
           {days.map((day) => (
-            <button
+            <Button
               key={day}
               className={`day-btn ${selectedDay === day ? "active" : ""}`}
               disabled={isDayDisabled(day)}
               onClick={() => !isDayDisabled(day) && setSelectedDay(day)}
             >
               {day}
-            </button>
+            </Button>
           ))}
           <button className="arrow-btn">
             <ChevronRight></ChevronRight>
@@ -64,21 +72,21 @@ export default function MenuVariants({ selectedDay, setSelectedDay, selectedPlan
           <ul className="space-y-2">
             {nutrient.map((nutrient, idx) => (
               <li key={idx} className="flex justify-between">
-                <p className="font-medium text-gray-700 text-left w-1/2">{nutrient}:</p>
+                <p className="font-medium text-gray-700 text-left w-1/2">
+                  {nutrient}:
+                </p>
                 <p className="text-gray-900 font-semibold text-left w-1/5 capitalize-text">
                   {menuItems && menuItems.length > 0
-  ? (menuItems[parseInt(selectedPlan.split(" ")[1], 10) - 1]?.[idx]?.name || "-")
-  : "-"
-}
-
+                    ? menuItems[parseInt(selectedPlan.split(" ")[1], 10) - 1]?.[
+                        idx
+                      ]?.name || "-"
+                    : "-"}
                 </p>
               </li>
             ))}
           </ul>
         </div>
-
-
       </div>
     </section>
-  )
+  );
 }

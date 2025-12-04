@@ -1,47 +1,41 @@
-import { useState, useEffect } from "react"
-import MenuVariants from "@/components/MenuVariants"
-import SelectedMenu from "@/components/SelectedMenu"
-import WeeklyMenuPlan from "@/components/WeeklyMenuPlan"
-import api_url from "@/util/url"
-
+import { useState, useEffect } from "react";
+import MenuVariants from "@/components/MenuVariants";
+import SelectedMenu from "@/components/SelectedMenu";
+import WeeklyMenuPlan from "@/components/WeeklyMenuPlan";
+import api_url from "@/util/url";
+import { toast } from "react-toastify";
 
 function formatUTCDateToYMD(d) {
-  const y = d.getUTCFullYear();
+  const y = d.getFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
-
-function getNextWeekdays(startDate, count = 5) {
-  const result = [];
-  const day = new Date(startDate);
-
-  while (result.length < count) {
-    const dow = day.getDay();
-    if (dow !== 0 && dow !== 6) {
-      result.push(day.toISOString().split("T")[0]);
-    }
-    day.setDate(day.getDate() + 1);
+function getCurrentWeekdays(date = new Date()) {
+  // Find Monday of the current week
+  const dayOfWeek = date.getDay(); // Sunday=0, Monday=1, ..., Saturday=6
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - ((dayOfWeek + 6) % 7));
+  // Get dates for Monday to Friday
+  const weekdays = [];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    weekdays.push(d.toISOString().split("T")[0]);
   }
-  return result;
+  return weekdays;
 }
 
 function getWeekRange(dateArg, offset = 0) {
-  const d = dateArg instanceof Date ? new Date(dateArg.getTime()) : new Date(dateArg);
-
-  // work in UTC to avoid local timezone shifts
+  const d =
+    dateArg instanceof Date ? new Date(dateArg.getTime()) : new Date(dateArg);
   const utcYear = d.getUTCFullYear();
   const utcMonth = d.getUTCMonth();
   const utcDate = d.getUTCDate();
 
-  // create a UTC-only Date at 00:00 UTC of that day
   const base = new Date(Date.UTC(utcYear, utcMonth, utcDate));
-
-  // Convert JS getUTCDay() so Monday = 0 ... Sunday = 6
   const dayIndex = (base.getUTCDay() + 6) % 7;
-
-  // Move to Monday (UTC), apply week offset
   const mondayUtc = new Date(base.getTime());
   mondayUtc.setUTCDate(base.getUTCDate() - dayIndex + offset * 7);
 
@@ -55,10 +49,8 @@ function getWeekRange(dateArg, offset = 0) {
 }
 
 function groupMenusByWeek(menus) {
-  // menus: array of menu objects, each with a .date property (YYYY-MM-DD)
   const weeks = {};
-  menus.forEach(menu => {
-    // const date = new Date(menu.date);
+  menus.forEach((menu) => {
     const { monday, friday } = getWeekRange(menu.date);
 
     const weekKey = `${monday}_${friday}`;
@@ -69,42 +61,38 @@ function groupMenusByWeek(menus) {
   return weeks;
 }
 
-
 export default function MealPlanner({ user }) {
-  console.log("user on meal planner: ", user.vendor_id)
-
-
+  const [loadingConfirm, setLoadingConfirm] = useState(false);
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-const todayDate = new Date();
-const todayIdx = todayDate.getDay() - 1; // Monday=0, ..., Friday=4
-const defaultDay = todayIdx >= 0 && todayIdx < 5 ? days[todayIdx] : "Monday";
-const [selectedDay, setSelectedDay] = useState(defaultDay);
-  const [selectedPlan, setSelectedPlan] = useState("Plan 1")
-  const [selectedMenuData, setSelectedMenuData] = useState({})
-  const [weeklyMenuData, setWeeklyMenuData] = useState({})
-  const [menuPlans, setMenuPlans] = useState([])
-  const [groupedMenus, setGroupedMenus] = useState({})
-
+  const todayDate = new Date();
+  const todayIdx = todayDate.getDay() - 1;
+  const defaultDay = todayIdx >= 0 && todayIdx < 5 ? days[todayIdx] : "Monday";
+  const [selectedDay, setSelectedDay] = useState(defaultDay);
+  const [selectedPlan, setSelectedPlan] = useState("Plan 1");
+  const [selectedMenuData, setSelectedMenuData] = useState({});
+  const [weeklyMenuData, setWeeklyMenuData] = useState({});
+  const [menuPlans, setMenuPlans] = useState([]);
+  const [groupedMenus, setGroupedMenus] = useState({});
+  const [menuExistenceMap, setMenuExistenceMap] = useState({});
 
   useEffect(() => {
-  api_url
-    .get(`menu/get_menu/${user.vendor_id}`)
-    .then((r) => {
-      const menus = r.data.payload;
-      const grouped = groupMenusByWeek(menus);
-      console.log("grouped menus from api: ", grouped);
-      console.log("menus from api: ", menus);
-      setGroupedMenus(grouped);
-    })
-    .catch((e) => {
-      console.error(e);
-    });
-}, [user.vendor_id]);
+    api_url
+      .get(`menu/get_menu/${user.vendor_id}`)
+      .then((r) => {
+        const menus = r.data.payload;
+        const grouped = groupMenusByWeek(menus);
+        console.log("grouped menus from api: ", grouped);
+        console.log("menus from api: ", menus);
+        setGroupedMenus(grouped);
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+  }, [user.vendor_id]);
 
-console.log("let it go: ", groupedMenus)
+  console.log("let it go: ", groupedMenus);
 
-
-  const weekdayDates = getNextWeekdays(new Date());
+  const weekdayDates = getCurrentWeekdays(todayDate);
   const dayToDate = {
     Monday: weekdayDates[0],
     Tuesday: weekdayDates[1],
@@ -114,146 +102,192 @@ console.log("let it go: ", groupedMenus)
   };
 
   function isDayDisabled(day) {
-  const idx = days.indexOf(day);
-  if (idx < todayIdx) return true; // Disable days before today
-  if (idx === todayIdx) return false; // Today is always enabled
-  // For days after today, enable only if previous day is selected in weeklyMenuData
-  const prev = days[idx - 1];
-  return !weeklyMenuData[prev];
-}
-
-  async function fetchDailyMenus() {
-    try {
-      const date = dayToDate[selectedDay];
-
-      const requests = Array.from({ length: 4 }, () =>
-        api_url.get(`/menu/create_menu?date=${date}`)
-      );
-
-      const responses = await Promise.all(requests);
-      const menus = responses.map((r) => r.data.payload);
-
-      setMenuPlans(menus);
-    } catch (err) {
-      console.error(err);
-    }
+    const idx = days.indexOf(day);
+    if (idx < todayIdx) return true;
+    if (idx === todayIdx) return false;
+    const prev = days[idx - 1];
+    return !weeklyMenuData[prev];
   }
-
-  useEffect(() => {
-    fetchDailyMenus();
-  }, [selectedDay]);
 
   function getSelectedMenuObject(menu) {
-    const categories = ["Carbohydrate", "Protein 1", "Protein 2", "Vegetables", "Fruit"]
-    const obj = {}
+    const categories = [
+      "Carbohydrate",
+      "Protein 1",
+      "Protein 2",
+      "Vegetables",
+      "Fruit",
+    ];
+    const obj = {};
     categories.forEach((cat, idx) => {
       obj[cat] = menu && menu[idx] ? [menu[idx].name] : [];
-    })
-    return obj
+    });
+    return obj;
   }
 
-  console.log("selecte dmenu :", selectedMenuData)
-  console.log("selected weekly :", weeklyMenuData)
+  console.log("selecte dmenu :", selectedMenuData);
+  console.log("selected weekly :", weeklyMenuData);
 
-
-    useEffect(() => {
+  useEffect(() => {
     const planIndex = parseInt(selectedPlan.split(" ")[1], 10) - 1;
     const menu = menuPlans[planIndex];
     setSelectedMenuData(getSelectedMenuObject(menu));
   }, [selectedPlan, menuPlans]);
 
- useEffect(() => {
-  const fetchMenus = async () => {
-    try {
-      // Run the same request 4 times in parallel
-      const requests = [
-        api_url.get("/menu/create_menu"),
-        api_url.get("/menu/create_menu"),
-        api_url.get("/menu/create_menu"),
-        api_url.get("/menu/create_menu"),
-      ];
+  useEffect(() => {
+    const fetchMenus = async () => {
+      try {
+        const requests = [
+          api_url.get("/menu/create_menu"),
+          api_url.get("/menu/create_menu"),
+          api_url.get("/menu/create_menu"),
+          api_url.get("/menu/create_menu"),
+        ];
 
-      const responses = await Promise.all(requests);
+        const responses = await Promise.all(requests);
 
-      const menuPlans = responses.map((res) => res.data.payload);
+        const menuPlans = responses.map((res) => res.data.payload);
 
-      console.log("All 4 menu plans:", menuPlans);
+        console.log("All 4 menu plans:", menuPlans);
 
-      setMenuPlans(menuPlans);
+        setMenuPlans(menuPlans);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    fetchMenus();
+  }, [selectedDay]);
 
-  fetchMenus();
-}, []);
+  console.log("menu plans from api :", menuPlans);
 
-
-console.log("menu plans from api :", menuPlans);
-
-   function handleConfirmSelectedMenu() {
+  function handleConfirmSelectedMenu() {
+    setLoadingConfirm(true);
     const date = dayToDate[selectedDay];
 
-     const foods = Object.values(selectedMenuData)
-    .flat()
-    .filter(Boolean);
+    const foods = Object.values(selectedMenuData).flat().filter(Boolean);
 
-    const body = {
-    date,
-    foods,
-    vendor_id: user.vendor_id
-  };
+    const isExist = menuExistenceMap[date]?.exists;
+    const menuID = menuExistenceMap[date]?.menuID;
 
+    if (isExist && menuID !== 0) {
+      const body = {
+        menu_id: menuID,
+        foods,
+      };
 
-       api_url
-      .post("/menu/select_menu", body)
-      .then((r) => {
-        const res = r.data;
-        console.log("response selected menu:", res.payload);
-      })
-      .catch((e) => {
-        console.error(e);
-      });
+      api_url
+        .put("/menu/update_menu", body)
+        .then(() => {
+          api_url
+            .get(`menu/get_menu/${user.vendor_id}`)
+            .then((r) => {
+              const menus = r.data.payload;
+              const grouped = groupMenusByWeek(menus);
+              console.log("grouped menus from api: ", grouped);
+              console.log("menus from api: ", menus);
+              setGroupedMenus(grouped);
+              setLoadingConfirm(false);
+            })
+            .catch((e) => {
+              console.error(e);
+            });
 
-    console.log("selected menu data to save :", selectedMenuData + " selected ")
+          toast.success(`Success update menu for ${selectedDay}`, {
+            position: "bottom-right",
+          });
 
+          setWeeklyMenuData((prev) => ({
+            ...prev,
+            [selectedDay]: {
+              date: dayToDate[selectedDay],
+              planIndex: selectedPlan,
+              ...selectedMenuData,
+            },
+          }));
+        })
+        .catch((e) => {
+          console.error(e);
+        })
+        .finally(() => setLoadingConfirm(false));
+    } else {
+      const body = {
+        date,
+        foods,
+        vendor_id: user.vendor_id,
+      };
 
-    setWeeklyMenuData((prev) => ({
-      ...prev,
-      [selectedDay]: {
-        date: dayToDate[selectedDay],
-        planIndex: selectedPlan,
-        ...selectedMenuData,
-      },
-    }));
+      api_url
+        .post("/menu/select_menu", body)
+        .then((r) => {
+          const res = r.data;
+          console.log("response selected menu:", res.payload);
+
+          api_url
+            .get(`menu/get_menu/${user.vendor_id}`)
+            .then((r) => {
+              const menus = r.data.payload;
+              const grouped = groupMenusByWeek(menus);
+              console.log("grouped menus from api: ", grouped);
+              console.log("menus from api: ", menus);
+              setGroupedMenus(grouped);
+              setLoadingConfirm(false);
+            })
+            .catch((e) => {
+              console.error(e);
+            });
+        })
+        .catch((e) => {
+          console.error(e);
+        });
+
+      console.log(
+        "selected menu data to save :",
+        selectedMenuData + " selected "
+      );
+
+      setWeeklyMenuData((prev) => ({
+        ...prev,
+        [selectedDay]: {
+          date: dayToDate[selectedDay],
+          planIndex: selectedPlan,
+          ...selectedMenuData,
+        },
+      }));
+    }
   }
 
   const [weekOffset, setWeekOffset] = useState(0);
   const today = new Date();
-const { monday, friday } = getWeekRange(today, weekOffset);
-const currentWeekKey = `${monday}_${friday}`;
-const currentWeekMenus = groupedMenus[currentWeekKey] || [];
-console.log("current week blue: ", groupedMenus);
-console.log("current week menus: ", currentWeekMenus);
-console.log("current week key: ", currentWeekKey);
+  const { monday, friday } = getWeekRange(today, weekOffset);
+  const currentWeekKey = `${monday}_${friday}`;
+  const currentWeekMenus = groupedMenus[currentWeekKey] || [];
+  console.log("current week blue: ", groupedMenus);
+  console.log("current week menus: ", currentWeekMenus);
+  console.log("current week key: ", currentWeekKey);
 
-const prevWeekKey = (() => {
-  const { monday, friday } = getWeekRange(today, -1);
-  return `${monday}_${friday}`;
-})();
-const prevWeekMenus = groupedMenus[prevWeekKey] || [];
-console.log("previous week menus: ", prevWeekMenus);
+  const prevWeekKey = (() => {
+    const { monday, friday } = getWeekRange(today, -1);
+    return `${monday}_${friday}`;
+  })();
+  const prevWeekMenus = groupedMenus[prevWeekKey] || [];
+  console.log("previous week menus: ", prevWeekMenus);
 
+  function handleMenuStatusChange(day, dateStr, exists, menuID) {
+    setMenuExistenceMap((prev) => {
+      if (
+        prev[dateStr]?.exists === exists &&
+        prev[dateStr]?.menuID === menuID
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [dateStr]: { exists, menuID },
+      };
+    });
+  }
 
-  // const selectedMenuData = {
-  //   Carbohydrate: ["Nasi"],
-  //   Protein: ["Ayam Goreng Telur"],
-  //   Vegetables: ["Orak-Arik Buncis Wortel"],
-  //   Fruit: ["Papaya"],
-  //   Drink: ["Susu"],
-  // }
-
+  console.log("orca: ", menuExistenceMap);
   return (
     <div className="meal-planner">
       <div className="planner-container">
@@ -267,18 +301,22 @@ console.log("previous week menus: ", prevWeekMenus);
             isDayDisabled={isDayDisabled}
           />
         </div>
-        <div >
-          <SelectedMenu items={selectedMenuData}
-            onConfirm={handleConfirmSelectedMenu} />
+        <div>
+          <SelectedMenu
+            items={selectedMenuData}
+            onConfirm={handleConfirmSelectedMenu}
+            loading={loadingConfirm}
+          />
         </div>
       </div>
       <WeeklyMenuPlan
-  weekKey={currentWeekKey}
-  weekMenus={currentWeekMenus}
-  weekRange={{ monday, friday }}
-  setWeekOffset={setWeekOffset}
-  weekOffset={weekOffset}
-/>
+        weekKey={currentWeekKey}
+        weekMenus={currentWeekMenus}
+        weekRange={{ monday, friday }}
+        setWeekOffset={setWeekOffset}
+        weekOffset={weekOffset}
+        onMenuStatusChange={handleMenuStatusChange}
+      />
     </div>
-  )
+  );
 }
