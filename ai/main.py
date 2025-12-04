@@ -9,21 +9,19 @@ from PIL import Image
 from ultralytics import YOLO
 from dotenv import load_dotenv
 
-# Load environment variables (untuk DB credentials)
+# Load environment variables
 load_dotenv()
 
 # --- KONFIGURASI DATABASE ---
-# Pastikan Anda setting variable environment DATABASE_URL nanti
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Inisialisasi Variable Global
+# Inisialisasi Global
 model = None
-NUTRITION_DB = {} # Akan diisi dari Database saat startup
+NUTRITION_DB = {} 
 DEFAULT_NUTRI = {"calories": 50, "protein": 1, "carbohydrate": 5, "fat": 1}
 
 # --- FUNGSI LOAD DATA DARI DB ---
 def load_nutrition_data():
-    """Mengambil data nutrisi dari tabel food_material di NeonDB"""
     global NUTRITION_DB
     print("🔄 Menghubungkan ke Database untuk mengambil data nutrisi...")
     
@@ -35,14 +33,13 @@ def load_nutrition_data():
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Query sesuai spesifikasi tabel food_material Anda
         query = "SELECT name, calories, fat, protein, carbohydrate FROM food_material"
         cur.execute(query)
         rows = cur.fetchall()
         
         count = 0
         for row in rows:
-            # Normalisasi key: ubah nama makanan jadi lowercase agar cocok dengan label YOLO
+            # Normalisasi key: lowercase + underscore
             key = row['name'].lower().replace(" ", "_")
             NUTRITION_DB[key] = {
                 "cal": float(row['calories']),
@@ -58,10 +55,63 @@ def load_nutrition_data():
     except Exception as e:
         print(f"❌ Gagal mengambil data dari DB: {e}")
 
-# --- LIFESPAN EVENT (Jalan saat server start) ---
+# --- HELPER: HITUNG SKOR KEPATUHAN GIZI (BARU) ---
+def calculate_compliance_score(nutrition):
+    """
+    Menghitung skor (0-100) berdasarkan standar makan siang anak sekolah.
+    Bobot: Kalori (40%) + Protein (30%) + Lemak (15%) + Karbo (15%)
+    """
+    score = 0.0
+    
+    # 1. SKOR KALORI (Maks 40 Poin)
+    # Target Ideal: 550 - 750 kkal
+    cal = nutrition['calories']
+    if 550 <= cal <= 750:
+        score += 40
+    elif 450 <= cal < 550 or 750 < cal <= 850:
+        score += 30
+    elif 350 <= cal < 450 or 850 < cal <= 950:
+        score += 15
+    else:
+        score += 5 # Terlalu ekstrem (sangat sedikit/banyak)
+
+    # 2. SKOR PROTEIN (Maks 30 Poin) - Zat Pertumbuhan
+    # Target Ideal: > 20 gram
+    pro = nutrition['protein']
+    if pro >= 20:
+        score += 30
+    elif 15 <= pro < 20:
+        score += 20
+    elif 10 <= pro < 15:
+        score += 10
+    else:
+        score += 0 # Sangat kurang protein
+
+    # 3. SKOR LEMAK (Maks 15 Poin) - Batasi Lemak
+    # Target Ideal: < 25 gram
+    fat = nutrition['fat']
+    if fat <= 25:
+        score += 15
+    elif 25 < fat <= 35:
+        score += 10
+    else:
+        score += 5 # Terlalu berminyak
+
+    # 4. SKOR KARBOHIDRAT (Maks 15 Poin)
+    # Target Ideal: 50 - 100 gram
+    carb = nutrition['carbohydrate']
+    if 50 <= carb <= 100:
+        score += 15
+    elif 30 <= carb < 50 or 100 < carb <= 130:
+        score += 10
+    else:
+        score += 5
+
+    return round(score, 1)
+
+# --- LIFESPAN EVENT ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Load Model YOLO
     global model
     try:
         model = YOLO("model.pt")
@@ -69,15 +119,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"❌ Gagal memuat model: {e}")
     
-    # 2. Load Data Nutrisi dari DB
     load_nutrition_data()
-    
     yield
-    # (Kode cleanup jika ada, bisa ditaruh di sini)
 
 app = FastAPI(title="MBG AI Service", lifespan=lifespan)
 
-# --- SCHEMA OUTPUT ---
 class PredictionResponse(BaseModel):
     calories: float
     fat: float
@@ -112,22 +158,16 @@ async def predict_meal(file: UploadFile = File(...)):
         for result in results:
             for box in result.boxes:
                 class_id = int(box.cls[0])
-                # Nama class dari YOLO (misal: "nasi_putih")
                 class_name = model.names[class_id].lower().replace(" ", "_")
                 confidence = float(box.conf[0])
 
                 if confidence > 0.4:
                     detected_items.append(class_name)
                     
-                    # Cari di NUTRITION_DB (yang sudah diload dari SQL)
-                    # Jika tidak ada, pakai DEFAULT_NUTRI
+                    # Ambil Nutrisi (Fallback ke Default jika tidak ada di DB)
                     nutri = NUTRITION_DB.get(class_name, DEFAULT_NUTRI)
                     
-                    # Mapping key dictionary nutrition_db ke key output
-                    # NUTRITION_DB keys: 'cal', 'fat', 'pro', 'carb'
-                    # DEFAULT keys: 'calories', 'protein', ... (perlu disamakan logicnya)
-                    
-                    # Ambil nilai dengan handling perbedaan nama key yang mungkin terjadi
+                    # Handle perbedaan nama key (cal vs calories) dari DB vs Default
                     cal = nutri.get("cal", nutri.get("calories", 0))
                     fat = nutri.get("fat", nutri.get("fat", 0))
                     pro = nutri.get("pro", nutri.get("protein", 0))
@@ -138,10 +178,8 @@ async def predict_meal(file: UploadFile = File(...)):
                     total_vals["protein"] += float(pro)
                     total_vals["carbohydrate"] += float(carb)
 
-        # Hitung Skor
-        score = 100.0
-        if total_vals["calories"] < 400: score = 60.0
-        elif total_vals["calories"] > 850: score = 70.0
+        # --- LOGIKA SKOR BARU DI SINI ---
+        score = calculate_compliance_score(total_vals)
 
         return {
             "calories": round(total_vals["calories"], 2),

@@ -1,115 +1,105 @@
 const db = require("../models/database");
+const logger = require("../utils/logger");
 
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  // The +1 makes it inclusive (so '10' is possible)
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+// Helper untuk mengambil item acak dari array
+const getRandomItem = (arr) => {
+  if (!arr || arr.length === 0) return null;
+  return arr[Math.floor(Math.random() * arr.length)];
+};
 
-const createMenu = async (req, res) => {
+// Endpoint 1: Generate Rekomendasi Menu Mingguan Otomatis
+const getMenuRecommendations = async (req, res) => {
   try {
-    const today = new Date();
+    // 1. Ambil semua bahan makanan dari Database
+    const result = await db.query("SELECT name, class FROM food_material");
+    const foods = result.rows;
 
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, "0");
-    const day = today.getDate().toString().padStart(2, "0");
-
-    const kinou = `${year}-${month}-${day - 1}`;
-    const ototoi = `${year}-${month}-${day - 2}`;
-    const kyou = `${year}-${month}-${day}`;
-
-    const getMenus = await db.query(
-      "SELECT * FROM menu WHERE date=$1 OR date=$2",
-      [kinou, ototoi]
-    );
-
-    const getFoods = await db.query("SELECT name, class FROM food_material");
-
-    const firstCohort = getMenus.rows[0].foods;
-    const secondCohort = getMenus.rows[1].foods;
-
-    console.log(firstCohort);
-    console.log(secondCohort);
-
-    const thirdCohort = getFoods.rows;
-
-    console.log(thirdCohort);
-
-    const firstLegion = new Set([...firstCohort, ...secondCohort]);
-
-    const firstFilter = thirdCohort.filter((i) => !firstLegion.has(i.name));
-
-    console.log(firstFilter);
-
-    const firstGrouping = firstFilter.reduce((a, i) => {
-      if (!a[i.class]) {
-        a[i.class] = [];
-      }
-
-      a[i.class].push(i);
-
-      return a;
-    }, {});
-
-    console.log(firstGrouping);
-
-    const finalLesson = [];
-
-    finalLesson.push(
-      firstGrouping.karbo[getRandomInt(0, firstGrouping.karbo.length - 1)]
-    );
-
-    let counter = [2, 1, 1];
-
-    counter.sort(() => Math.random - 0.5);
-
-    let ctrl = 0;
-    while (ctrl < 3) {
-      while (counter[ctrl] > 0) {
-        if (ctrl == 0) {
-          finalLesson.push(
-            firstGrouping.protein[
-              getRandomInt(0, firstGrouping.protein.length - 1)
-            ]
-          );
-        } else if (ctrl == 1) {
-          finalLesson.push(
-            firstGrouping.sayuran[
-              getRandomInt(0, firstGrouping.sayuran.length - 1)
-            ]
-          );
-        } else if (ctrl == 2) {
-          finalLesson.push(
-            firstGrouping.buah[getRandomInt(0, firstGrouping.buah.length - 1)]
-          );
-        }
-        counter[ctrl]--;
-      }
-      ctrl++;
+    if (foods.length === 0) {
+      return res.status(404).json({ msg: "Database bahan makanan kosong! Harap isi tabel food_material." });
     }
 
-    console.log(finalLesson);
+    // 2. Grouping berdasarkan Kelas/Kategori
+    // Logika filter fleksibel (case-insensitive)
+    const grouped = {
+      Karbo: foods.filter(f => /karbo|carbo/i.test(f.class)),
+      Protein: foods.filter(f => /protein|lauk/i.test(f.class)),
+      Sayur: foods.filter(f => /sayur|vegetable/i.test(f.class)),
+      Buah: foods.filter(f => /buah|fruit/i.test(f.class)),
+      Minum: foods.filter(f => /minum|drink|susu/i.test(f.class)) 
+    };
 
-    const saigo = finalLesson.map((i) => i.name);
+    // 3. Generate Jadwal Senin - Jumat
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const recommendations = {};
 
-    console.log(saigo);
-
-    const lastInsert = await db.query(
-      "INSERT INTO menu (date, foods) VALUES ($1,$2) RETURNING *",
-      [kyou, saigo]
-    );
-
-    return res.status(200).json({
-      msg: "Ok",
-      payload: lastInsert.rows,
+    days.forEach(day => {
+      recommendations[day] = {};
+      
+      // Buat 4 Plan Berbeda tiap hari
+      for (let i = 1; i <= 4; i++) {
+        const karbo = getRandomItem(grouped.Karbo);
+        const protein = getRandomItem(grouped.Protein);
+        const sayur = getRandomItem(grouped.Sayur);
+        const buah = getRandomItem(grouped.Buah);
+        const minum = getRandomItem(grouped.Minum);
+        
+        // Format array string agar sesuai dengan Frontend
+        // Urutan Wajib: [Karbo, Protein, Sayur, Buah, Minum]
+        recommendations[day][`Plan ${i}`] = [
+          karbo ? karbo.name : "Nasi Putih",
+          protein ? protein.name : "Telur Dadar",
+          sayur ? sayur.name : "Tumis Kangkung",
+          buah ? buah.name : "Pisang",
+          minum ? minum.name : "Air Putih" // Default jika kosong
+        ];
+      }
     });
+
+    logger.info("[Menu] Generated weekly recommendations successfully");
+    
+    return res.status(200).json({
+      msg: "Recommendations generated",
+      payload: recommendations
+    });
+
   } catch (e) {
-    console.error(e.message);
+    logger.error(`[Menu Error]: ${e.message}`);
     return res.status(500).send("Server error");
   }
 };
 
+// Endpoint 2: Simpan Menu Terpilih ke Database
+const saveWeeklyPlan = async (req, res) => {
+  // Frontend mengirim object menu lengkap dan vendor_id
+  const { weeklyPlan, vendor_id } = req.body; 
+  
+  if (!weeklyPlan || !vendor_id) {
+      return res.status(400).json({ msg: "Data plan atau vendor_id tidak lengkap." });
+  }
+
+  try {
+    // Simpan ke tabel 'menus'
+    // Kolom 'food_items' diasumsikan bertipe JSONB di database
+    const query = `
+        INSERT INTO menus (vendor_id, food_items, date) 
+        VALUES ($1, $2, NOW())
+        RETURNING menu_id
+    `;
+    
+    const values = [vendor_id, JSON.stringify(weeklyPlan)];
+    
+    const result = await db.query(query, values);
+  
+    logger.info(`[Menu] Weekly plan saved for Vendor ${vendor_id} (ID: ${result.rows[0].menu_id})`);
+    return res.status(201).json({ msg: "Menu mingguan berhasil disimpan!" });
+
+  } catch (e) {
+    logger.error(`[Menu Save Error]: ${e.message}`);
+    return res.status(500).send("Gagal menyimpan menu.");
+  }
+};
+
 module.exports = {
-  createMenu,
+  getMenuRecommendations,
+  saveWeeklyPlan
 };

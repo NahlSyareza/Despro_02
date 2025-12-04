@@ -1,0 +1,62 @@
+2025-12-04 11:40:37 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 11:40:42 [INFO]: ::1 - - [04/Dec/2025:04:40:42 +0000] "POST /vendor/login HTTP/1.1" 404 152 "-" "PostmanRuntime/7.49.0"
+2025-12-04 11:41:58 [INFO]: ::1 - - [04/Dec/2025:04:41:58 +0000] "POST /vendor/login HTTP/1.1" 404 152 "-" "PostmanRuntime/7.49.0"
+2025-12-04 11:42:09 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 11:42:12 [INFO]: [Login] Success: 'kantin_sehat_01' logged in
+2025-12-04 11:42:12 [INFO]: ::1 - - [04/Dec/2025:04:42:12 +0000] "POST /vendor/login HTTP/1.1" 200 103 "-" "PostmanRuntime/7.49.0"
+2025-12-04 11:44:21 [INFO]: [Tray] Processing image from Vendor: b3e0ee0d-74fa-4d50-aec0-af72facae895
+2025-12-04 11:44:21 [INFO]: [Tray] Sending to AI: http://localhost:8000/predict
+2025-12-04 11:44:23 [INFO]: [AI] Success: {"calories":956,"fat":51.7,"protein":81.94,"carbohydrate":45.3,"menu_names":["ayam_goreng","tempe","nasi_putih","tempe","ayam_goreng"],"compliance_score":70}
+2025-12-04 11:44:23 [ERROR]: [Tray Controller] Critical Error: column "image_path" of relation "tray" does not exist
+2025-12-04 11:44:23 [INFO]: ::1 - - [04/Dec/2025:04:44:23 +0000] "POST /tray/upload HTTP/1.1" 500 35 "-" "PostmanRuntime/7.49.0"
+2025-12-04 13:49:52 [INFO]: [Tray] Processing image from Vendor: b3e0ee0d-74fa-4d50-aec0-af72facae895
+2025-12-04 13:49:52 [INFO]: [Tray] Sending to AI: http://localhost:8000/predict
+2025-12-04 13:49:53 [INFO]: [AI] Success: {"calories":956,"fat":51.7,"protein":81.94,"carbohydrate":45.3,"menu_names":["ayam_goreng","tempe","nasi_putih","tempe","ayam_goreng"],"compliance_score":50}
+2025-12-04 13:49:54 [ERROR]: [Tray Controller] Critical Error: column "image_path" of relation "tray" does not exist
+2025-12-04 13:49:54 [INFO]: ::1 - - [04/Dec/2025:06:49:54 +0000] "POST /tray/upload HTTP/1.1" 500 35 "-" "PostmanRuntime/7.49.0"
+2025-12-04 13:50:06 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 13:50:09 [INFO]: [Tray] Processing image from Vendor: b3e0ee0d-74fa-4d50-aec0-af72facae895
+2025-12-04 13:50:09 [INFO]: [Tray] Sending to AI: http://localhost:8000/predict
+2025-12-04 13:50:09 [INFO]: [AI] Success: {"calories":956,"fat":51.7,"protein":81.94,"carbohydrate":45.3,"menu_names":["ayam_goreng","tempe","nasi_putih","tempe","ayam_goreng"],"compliance_score":50}
+2025-12-04 13:50:09 [ERROR]: [Tray Controller] Critical Error: column "image_path" of relation "tray" does not exist
+2025-12-04 13:50:09 [INFO]: ::1 - - [04/Dec/2025:06:50:09 +0000] "POST /tray/upload HTTP/1.1" 500 35 "-" "PostmanRuntime/7.49.0"
+2025-12-04 13:50:21 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 13:50:25 [INFO]: [Tray] Processing image from Vendor: b3e0ee0d-74fa-4d50-aec0-af72facae895
+2025-12-04 13:50:25 [INFO]: [Tray] Sending to AI: http://localhost:8000/predict
+2025-12-04 13:50:25 [INFO]: [AI] Success: {"calories":956,"fat":51.7,"protein":81.94,"carbohydrate":45.3,"menu_names":["ayam_goreng","tempe","nasi_putih","tempe","ayam_goreng"],"compliance_score":50}
+2025-12-04 13:50:25 [INFO]: [Tray] Saved to DB. New ID: 05523aae-e393-435e-b10a-bec1bab894f2
+2025-12-04 13:50:25 [INFO]: ::1 - - [04/Dec/2025:06:50:25 +0000] "POST /tray/upload HTTP/1.1" 201 258 "-" "PostmanRuntime/7.49.0"
+2025-12-04 13:51:03 [INFO]: ::1 - - [04/Dec/2025:06:51:03 +0000] "GET /tray/log/b3e0ee0d-74fa-4d50-aec0-af72facae895?days=7 HTTP/1.1" 200 322 "-" "PostmanRuntime/7.49.0"
+2025-12-04 13:51:32 [INFO]: ::1 - - [04/Dec/2025:06:51:32 +0000] "GET /uploads/tray-1764831025564-421832990.jpeg HTTP/1.1" 200 31264 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 OPR/124.0.0.0"
+2025-12-04 13:51:32 [INFO]: ::1 - - [04/Dec/2025:06:51:32 +0000] "GET /favicon.ico HTTP/1.1" 404 150 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 OPR/124.0.0.0"
+2025-12-04 13:51:51 [ERROR]: [Review Log] Error: relation "reviews" does not exist
+2025-12-04 13:51:51 [INFO]: ::1 - - [04/Dec/2025:06:51:51 +0000] "GET /review/vendor/b3e0ee0d-74fa-4d50-aec0-af72facae895?days=30 HTTP/1.1" 500 12 "-" "PostmanRuntime/7.49.0"
+2025-12-04 13:52:19 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 13:52:23 [INFO]: ::1 - - [04/Dec/2025:06:52:23 +0000] "GET /review/vendor/b3e0ee0d-74fa-4d50-aec0-af72facae895?days=30 HTTP/1.1" 200 40 "-" "PostmanRuntime/7.49.0"
+2025-12-04 13:52:50 [ERROR]: [Review] Error: column "message" of relation "review" does not exist
+2025-12-04 13:52:50 [INFO]: ::1 - - [04/Dec/2025:06:52:50 +0000] "POST /review/submit HTTP/1.1" 500 12 "-" "PostmanRuntime/7.49.0"
+2025-12-04 13:53:41 [ERROR]: [Review] Error: malformed array literal: "Rasa Hambar"
+2025-12-04 13:53:41 [INFO]: ::1 - - [04/Dec/2025:06:53:41 +0000] "POST /review/submit HTTP/1.1" 500 12 "-" "PostmanRuntime/7.49.0"
+2025-12-04 14:01:03 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 14:02:17 [ERROR]: [Review Error]: relation "reviews" does not exist
+2025-12-04 14:02:17 [INFO]: ::1 - - [04/Dec/2025:07:02:17 +0000] "POST /review/submit HTTP/1.1" 500 12 "-" "PostmanRuntime/7.49.0"
+2025-12-04 14:02:25 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 14:02:28 [ERROR]: [Review Error]: relation "reviews" does not exist
+2025-12-04 14:02:28 [INFO]: ::1 - - [04/Dec/2025:07:02:28 +0000] "POST /review/submit HTTP/1.1" 500 12 "-" "PostmanRuntime/7.49.0"
+2025-12-04 14:02:35 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 14:02:41 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 14:02:48 [ERROR]: [Review Error]: relation "food_issues" does not exist
+2025-12-04 14:02:48 [INFO]: ::1 - - [04/Dec/2025:07:02:48 +0000] "POST /review/submit HTTP/1.1" 500 12 "-" "PostmanRuntime/7.49.0"
+2025-12-04 14:03:00 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 14:03:04 [ERROR]: [Review Error]: column "issue_type" does not exist
+2025-12-04 14:03:04 [INFO]: ::1 - - [04/Dec/2025:07:03:04 +0000] "POST /review/submit HTTP/1.1" 500 12 "-" "PostmanRuntime/7.49.0"
+2025-12-04 14:05:46 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 14:05:52 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 14:06:43 [ERROR]: [Review Error]: relation "reviews" does not exist
+2025-12-04 14:06:43 [INFO]: ::1 - - [04/Dec/2025:07:06:43 +0000] "POST /review/submit HTTP/1.1" 500 12 "-" "PostmanRuntime/7.49.0"
+2025-12-04 14:07:04 [INFO]: Server running on http://127.0.0.1:2001
+2025-12-04 14:07:08 [ERROR]: [Review Error]: null value in column "message" of relation "review" violates not-null constraint
+2025-12-04 14:07:08 [INFO]: ::1 - - [04/Dec/2025:07:07:08 +0000] "POST /review/submit HTTP/1.1" 500 12 "-" "PostmanRuntime/7.49.0"
+2025-12-04 14:07:35 [INFO]: [Review] Success: NIS 12345678
+2025-12-04 14:07:35 [INFO]: ::1 - - [04/Dec/2025:07:07:35 +0000] "POST /review/submit HTTP/1.1" 201 48 "-" "PostmanRuntime/7.49.0"
+2025-12-04 15:37:51 [INFO]: Server running on http://127.0.0.1:2001

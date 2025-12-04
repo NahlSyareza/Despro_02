@@ -1,23 +1,23 @@
 import { useEffect, useState } from "react";
-
 import { StatCard } from "@/components/cards/StatCard";
 import { OverviewRating } from "@/components/charts/OverviewRating";
 import { OverviewNutrition } from "@/components/charts/OverviewNutrition";
-import api_url from "../util/url";
+import api_url, { IS_MOCK } from "../util/url";
 
-const USE_MOCK = true;
+// IMPORT DATA MOCK
+import { MOCK_OVERVIEW_KPI, MOCK_OVERVIEW_RATINGS, MOCK_OVERVIEW_QUALITY } from "@/data/mockData";
 
 export default function OverviewPage() {
   const [kpis, setKpis] = useState({
-    mealsAnalyzed: 1234,
-    feedbackRate: 73.8,
-    averageRating: 4.6,
-    nutritionCompliance: 71.6,
+    mealsAnalyzed: 0,
+    feedbackRate: 0,
+    averageRating: 0,
+    nutritionCompliance: 0,
     deltas: {
-      mealsAnalyzed: 1.47,
-      feedbackRate: -0.59,
-      averageRating: -3.4,
-      nutritionCompliance: 11.22,
+      mealsAnalyzed: 0,
+      feedbackRate: 0,
+      averageRating: 0,
+      nutritionCompliance: 0,
     },
   });
   const [ratings, setRatings] = useState([]);
@@ -27,82 +27,54 @@ export default function OverviewPage() {
     let cancelled = false;
 
     async function fetchAll() {
-      if (USE_MOCK) {
-        const mockKpis = {
-          mealsAnalyzed: 1234,
-          feedbackRate: 73.8,
-          averageRating: 4.6,
-          nutritionCompliance: 71.6,
-          deltas: {
-            mealsAnalyzed: 1.47,
-            feedbackRate: -0.59,
-            averageRating: -3.4,
-            nutritionCompliance: 11.22,
-          },
-        };
-
-        const mockRatings = [
-          { rating: 1, count: 115 },
-          { rating: 2, count: 164 },
-          { rating: 3, count: 145 },
-          { rating: 4, count: 123 },
-          { rating: 5, count: 112 },
-        ];
-
-        const mockQuality = [
-          { label: "Good", value: 46 },
-          { label: "Fair", value: 36 },
-          { label: "Poor", value: 18 },
-        ];
-
+      // --- LOGIKA MOCK ---
+      if (IS_MOCK) {
+        console.log("🛠️ Overview: Using Mock Data");
+        
         if (!cancelled) {
-          setKpis(mockKpis);
-          setRatings(mockRatings);
-          setQuality(mockQuality);
+          // GUNAKAN DATA IMPORT
+          setKpis(MOCK_OVERVIEW_KPI);
+          setRatings(MOCK_OVERVIEW_RATINGS);
+          setQuality(MOCK_OVERVIEW_QUALITY);
         }
         return;
+      }
+
+      // --- LOGIKA REAL API ---
+      console.log("🌍 Mode Real: Fetching KPI API");
+      try {
+          const date = new Date().toISOString().split('T')[0]; // Hari ini
+          
+          // Contoh pengambilan data KPI real (Pastikan endpoint backend sudah ada)
+          // Jika belum ada endpoint spesifik, biarkan ini atau handle error
+          const [ratingRes, overallRes] = await Promise.all([
+             api_url.get(`/review/average_rating/${date}`),
+             api_url.get(`/review/overall_rating_dy/${date}`)
+          ]);
+
+          if (!cancelled && ratingRes.data?.payload?.[0]) {
+             const avg = parseFloat(ratingRes.data.payload[0].avg);
+             setKpis(prev => ({
+                 ...prev,
+                 averageRating: isNaN(avg) ? 0 : avg.toFixed(1)
+             }));
+          }
+
+          if (!cancelled && overallRes.data?.payload) {
+             const fmtPayload = overallRes.data.payload.map(({ reting: rating, ...rest }) => ({
+                rating,
+                ...rest,
+              }));
+              setRatings(fmtPayload);
+          }
+
+      } catch (e) {
+          console.error("API Error Overview:", e);
       }
     }
 
     fetchAll();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    api_url
-      // HARDCODED DATE FIRST!
-      .get("/review/average_rating/2025-11-17")
-      .then((r) => {
-        const res = r.data;
-        const avg = res.payload[0].avg;
-        console.log(res.payload[0].avg);
-
-        setKpis((p) => ({
-          ...p,
-          averageRating: Math.round(avg * 10) / 10,
-        }));
-      })
-      .catch((e) => {
-        console.error(e);
-      });
-
-    api_url
-      .get("/review/overall_rating_dy/2025-11-17")
-      .then((r) => {
-        const res = r.data;
-        const payload = res.payload;
-        const fmtPayload = payload.map(({ reting: rating, ...rest }) => ({
-          rating,
-          ...rest,
-        }));
-        console.log(fmtPayload);
-        setRatings(fmtPayload);
-      })
-      .catch((e) => {
-        console.error(e);
-      });
+    return () => { cancelled = true; };
   }, []);
 
   return (
