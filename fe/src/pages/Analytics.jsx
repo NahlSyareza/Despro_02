@@ -3,55 +3,597 @@ import { NutritionQuality } from "@/components/charts/NutritionQuality";
 import { StudentFeedback } from "@/components/feedback/StudentFeedback";
 import { TrayLog } from "@/components/tables/TrayLog";
 import { FoodIssues } from "@/components/charts/FoodIssues";
-import { useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import api_url from "../util/url";
 
 export default function Analytics() {
   const [studentFeedback, setStudentFeedback] = useState([
     {
-        id: 1,
-        name: "Tray_ID 1",
-        rating: 5,
-        date: "25/10/2025",
-        text: "Makanannya enak, bumbu ayamnya meresap tapi nasinya kebanyakan jadi lauknya habis duluan.",
+      id: 1,
+      name: "Tray_ID 1",
+      rating: 5,
+      date: "25/10/2025",
+      text: "Makanannya enak, bumbu ayamnya meresap tapi nasinya kebanyakan jadi lauknya habis duluan.",
     },
     {
-        id: 2,
-        name: "Tray_ID 2",
-        rating: 5,
-        date: "25/10/2025",
-        text: "Makanannya enak, bumbu ayamnya meresap tapi nasinya kebanyakan jadi lauknya habis duluan. Sayurnya enak, buahnya kurang fresh. Next ikan ya wok",
+      id: 2,
+      name: "Tray_ID 2",
+      rating: 5,
+      date: "25/10/2025",
+      text: "Makanannya enak, bumbu ayamnya meresap tapi nasinya kebanyakan jadi lauknya habis duluan. Sayurnya enak, buahnya kurang fresh. Next ikan ya wok",
     },
     {
-        id: 3,
-        name: "Tray_ID 3",
-        rating: 3,
-        date: "25/08/2025",
-        text: "Lauknya sedikit pelit bat ini",
+      id: 3,
+      name: "Tray_ID 3",
+      rating: 3,
+      date: "25/08/2025",
+      text: "Lauknya sedikit pelit bat ini",
     },
     {
-        id: 4,
-        name: "Tray_ID 3",
-        rating: 3,
-        date: "25/08/2025",
-        text: "Lauknya sedikit",
+      id: 4,
+      name: "Tray_ID 3",
+      rating: 3,
+      date: "25/08/2025",
+      text: "Lauknya sedikit",
     },
     {
-        id: 5,
-        name: "Tray_ID 3",
-        rating: 3,
-        date: "25/08/2025",
-        text: "Lauknya sedikit",
+      id: 5,
+      name: "Tray_ID 3",
+      rating: 3,
+      date: "25/08/2025",
+      text: "Lauknya sedikit",
     },
     {
-        id: 6,
-        name: "Tray_ID 3",
-        rating: 3,
-        date: "25/08/2025",
-        text: "Lauknya sedikit",
-    },]);
+      id: 6,
+      name: "Tray_ID 3",
+      rating: 3,
+      date: "25/08/2025",
+      text: "Lauknya sedikit",
+    },
+  ]);
 
-  const [trayLog, setTrayLog] = useState ([ { date: "20/10/2025", trayId: "ARD42", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD41", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD40", menuId: "SU13UTX", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD39", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD38", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD47", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD37", menuId: "B-12345", calories: "950", fat: "33.0", protein: "45.0", carbs: "50.0" }, { date: "20/10/2025", trayId: "ARD36", menuId: "C-56789", calories: "980", fat: "39.0", protein: "42.0", carbs: "47.0" }, { date: "20/10/2025", trayId: "ARD35", menuId: "D-11223", calories: "1010", fat: "41.0", protein: "43.0", carbs: "46.0" }, { date: "20/10/2025", trayId: "ARD34", menuId: "E-44556", calories: "1020", fat: "42.0", protein: "44.0", carbs: "45.0" }, { date: "20/10/2025", trayId: "ARD33", menuId: "F-77889", calories: "1040", fat: "43.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD32", menuId: "G-99001", calories: "1030", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD42", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD41", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD40", menuId: "SU13UTX", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD39", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD38", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD47", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD37", menuId: "B-12345", calories: "950", fat: "33.0", protein: "45.0", carbs: "50.0" }, { date: "20/10/2025", trayId: "ARD36", menuId: "C-56789", calories: "980", fat: "39.0", protein: "42.0", carbs: "47.0" }, { date: "20/10/2025", trayId: "ARD35", menuId: "D-11223", calories: "1010", fat: "41.0", protein: "43.0", carbs: "46.0" }, { date: "20/10/2025", trayId: "ARD34", menuId: "E-44556", calories: "1020", fat: "42.0", protein: "44.0", carbs: "45.0" }, { date: "20/10/2025", trayId: "ARD33", menuId: "F-77889", calories: "1040", fat: "43.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD32", menuId: "G-99001", calories: "1030", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD42", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD41", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD40", menuId: "SU13UTX", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD39", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD38", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD47", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD37", menuId: "B-12345", calories: "950", fat: "33.0", protein: "45.0", carbs: "50.0" }, { date: "20/10/2025", trayId: "ARD36", menuId: "C-56789", calories: "980", fat: "39.0", protein: "42.0", carbs: "47.0" }, { date: "20/10/2025", trayId: "ARD35", menuId: "D-11223", calories: "1010", fat: "41.0", protein: "43.0", carbs: "46.0" }, { date: "20/10/2025", trayId: "ARD34", menuId: "E-44556", calories: "1020", fat: "42.0", protein: "44.0", carbs: "45.0" }, { date: "20/10/2025", trayId: "ARD33", menuId: "F-77889", calories: "1040", fat: "43.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD32", menuId: "G-99001", calories: "1030", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD42", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD41", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD40", menuId: "SU13UTX", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD39", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD38", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD47", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD37", menuId: "B-12345", calories: "950", fat: "33.0", protein: "45.0", carbs: "50.0" }, { date: "20/10/2025", trayId: "ARD36", menuId: "C-56789", calories: "980", fat: "39.0", protein: "42.0", carbs: "47.0" }, { date: "20/10/2025", trayId: "ARD35", menuId: "D-11223", calories: "1010", fat: "41.0", protein: "43.0", carbs: "46.0" }, { date: "20/10/2025", trayId: "ARD34", menuId: "E-44556", calories: "1020", fat: "42.0", protein: "44.0", carbs: "45.0" }, { date: "20/10/2025", trayId: "ARD33", menuId: "F-77889", calories: "1040", fat: "43.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD32", menuId: "G-99001", calories: "1030", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD42", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD41", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD40", menuId: "SU13UTX", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD39", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD38", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD47", menuId: "A-23850", calories: "1019", fat: "44.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD37", menuId: "B-12345", calories: "950", fat: "33.0", protein: "45.0", carbs: "50.0" }, { date: "20/10/2025", trayId: "ARD36", menuId: "C-56789", calories: "980", fat: "39.0", protein: "42.0", carbs: "47.0" }, { date: "20/10/2025", trayId: "ARD35", menuId: "D-11223", calories: "1010", fat: "41.0", protein: "43.0", carbs: "46.0" }, { date: "20/10/2025", trayId: "ARD34", menuId: "E-44556", calories: "1020", fat: "42.0", protein: "44.0", carbs: "45.0" }, { date: "20/10/2025", trayId: "ARD33", menuId: "F-77889", calories: "1040", fat: "43.0", protein: "44.0", carbs: "44.0" }, { date: "20/10/2025", trayId: "ARD32", menuId: "G-99001", calories: "1030", fat: "44.0", protein: "44.0", carbs: "44.0" }, ])
+  const [trayLog, setTrayLog] = useState([
+    {
+      date: "20/10/2025",
+      trayId: "ARD42",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD41",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD40",
+      menuId: "SU13UTX",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD39",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD38",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD47",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD37",
+      menuId: "B-12345",
+      calories: "950",
+      fat: "33.0",
+      protein: "45.0",
+      carbs: "50.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD36",
+      menuId: "C-56789",
+      calories: "980",
+      fat: "39.0",
+      protein: "42.0",
+      carbs: "47.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD35",
+      menuId: "D-11223",
+      calories: "1010",
+      fat: "41.0",
+      protein: "43.0",
+      carbs: "46.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD34",
+      menuId: "E-44556",
+      calories: "1020",
+      fat: "42.0",
+      protein: "44.0",
+      carbs: "45.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD33",
+      menuId: "F-77889",
+      calories: "1040",
+      fat: "43.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD32",
+      menuId: "G-99001",
+      calories: "1030",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD42",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD41",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD40",
+      menuId: "SU13UTX",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD39",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD38",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD47",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD37",
+      menuId: "B-12345",
+      calories: "950",
+      fat: "33.0",
+      protein: "45.0",
+      carbs: "50.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD36",
+      menuId: "C-56789",
+      calories: "980",
+      fat: "39.0",
+      protein: "42.0",
+      carbs: "47.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD35",
+      menuId: "D-11223",
+      calories: "1010",
+      fat: "41.0",
+      protein: "43.0",
+      carbs: "46.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD34",
+      menuId: "E-44556",
+      calories: "1020",
+      fat: "42.0",
+      protein: "44.0",
+      carbs: "45.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD33",
+      menuId: "F-77889",
+      calories: "1040",
+      fat: "43.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD32",
+      menuId: "G-99001",
+      calories: "1030",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD42",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD41",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD40",
+      menuId: "SU13UTX",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD39",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD38",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD47",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD37",
+      menuId: "B-12345",
+      calories: "950",
+      fat: "33.0",
+      protein: "45.0",
+      carbs: "50.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD36",
+      menuId: "C-56789",
+      calories: "980",
+      fat: "39.0",
+      protein: "42.0",
+      carbs: "47.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD35",
+      menuId: "D-11223",
+      calories: "1010",
+      fat: "41.0",
+      protein: "43.0",
+      carbs: "46.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD34",
+      menuId: "E-44556",
+      calories: "1020",
+      fat: "42.0",
+      protein: "44.0",
+      carbs: "45.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD33",
+      menuId: "F-77889",
+      calories: "1040",
+      fat: "43.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD32",
+      menuId: "G-99001",
+      calories: "1030",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD42",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD41",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD40",
+      menuId: "SU13UTX",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD39",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD38",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD47",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD37",
+      menuId: "B-12345",
+      calories: "950",
+      fat: "33.0",
+      protein: "45.0",
+      carbs: "50.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD36",
+      menuId: "C-56789",
+      calories: "980",
+      fat: "39.0",
+      protein: "42.0",
+      carbs: "47.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD35",
+      menuId: "D-11223",
+      calories: "1010",
+      fat: "41.0",
+      protein: "43.0",
+      carbs: "46.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD34",
+      menuId: "E-44556",
+      calories: "1020",
+      fat: "42.0",
+      protein: "44.0",
+      carbs: "45.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD33",
+      menuId: "F-77889",
+      calories: "1040",
+      fat: "43.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD32",
+      menuId: "G-99001",
+      calories: "1030",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD42",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD41",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD40",
+      menuId: "SU13UTX",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD39",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD38",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD47",
+      menuId: "A-23850",
+      calories: "1019",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD37",
+      menuId: "B-12345",
+      calories: "950",
+      fat: "33.0",
+      protein: "45.0",
+      carbs: "50.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD36",
+      menuId: "C-56789",
+      calories: "980",
+      fat: "39.0",
+      protein: "42.0",
+      carbs: "47.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD35",
+      menuId: "D-11223",
+      calories: "1010",
+      fat: "41.0",
+      protein: "43.0",
+      carbs: "46.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD34",
+      menuId: "E-44556",
+      calories: "1020",
+      fat: "42.0",
+      protein: "44.0",
+      carbs: "45.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD33",
+      menuId: "F-77889",
+      calories: "1040",
+      fat: "43.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+    {
+      date: "20/10/2025",
+      trayId: "ARD32",
+      menuId: "G-99001",
+      calories: "1030",
+      fat: "44.0",
+      protein: "44.0",
+      carbs: "44.0",
+    },
+  ]);
 
   useEffect(() => {
     // Fot student feedback
@@ -70,15 +612,14 @@ export default function Analytics() {
         }));
 
         setStudentFeedback(formattedFeedback);
-
       })
       .catch((e) => {
         console.error(e);
       });
 
-      //For tray list log
-      // Vendor ID still hardcode
-      api_url
+    //For tray list log
+    // Vendor ID still hardcode
+    api_url
       .get("/tray/log/11dd10a9-af8d-4ffc-ab6f-01a2c84ad068")
       .then((r) => {
         const res = r.data;
@@ -89,20 +630,80 @@ export default function Analytics() {
           trayId: item.tray_id,
           menuId: "-",
           calories: item.calories,
-          fat: item.fat ,
+          fat: item.fat,
           protein: item.protein,
           carbs: item.carbohydrate,
           //image still not mapped yet
         }));
 
         setTrayLog(formattedResponse);
-
       })
       .catch((e) => {
         console.error(e);
       });
-
   }, []);
+
+  function getWeekDates(baseDate, offset = 0) {
+    const dayOfWeek = baseDate.getDay();
+    const monday = new Date(baseDate);
+    monday.setDate(baseDate.getDate() - ((dayOfWeek + 6) % 7) + offset * 7);
+    const dates = [];
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      dates.push(d);
+    }
+    return dates;
+  }
+
+  async function fetchWeekRatings(dates) {
+    const results = [];
+    for (const d of dates) {
+      const dateStr = d.toLocaleDateString("en-CA");
+      try {
+        const res = await api_url.get(
+          `/review/average_rating_dy/${dateStr}/86833ad3-d58a-4c7f-a5ab-a8a21648d9e9`
+        );
+        const avg = res.data.payload[0]?.average_rating
+          ? Number(res.data.payload[0].average_rating)
+          : null;
+        results.push({ date: d, avg });
+      } catch (error) {
+        results.push({ date: d, avg: null });
+        console.log("Error: ", error);
+      }
+    }
+    return results;
+  }
+
+  const [chartData, setChartData] = useState([]);
+
+  useEffect(() => {
+    async function fetchChartData() {
+      const today = new Date();
+      const currentWeekDates = getWeekDates(today, 0);
+      const previousWeekDates = getWeekDates(today, -1);
+
+      const currentWeekRatings = await fetchWeekRatings(currentWeekDates);
+      const previousWeekRatings = await fetchWeekRatings(previousWeekDates);
+
+      console.log("Current Week Ratings:", currentWeekRatings);
+
+      const chartData = currentWeekDates.map((d, idx) => ({
+        date: d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
+        thisWeek: currentWeekRatings[idx]?.avg
+          ? currentWeekRatings[idx].avg
+          : 0,
+        previousWeek: previousWeekRatings[idx]?.avg
+          ? previousWeekRatings[idx].avg
+          : 0,
+      }));
+
+      setChartData(chartData);
+    }
+
+    fetchChartData();
+  }, [setChartData]);
 
   return (
     <div className="min-h-screen ">
@@ -116,18 +717,18 @@ export default function Analytics() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <OverallRating />
+          <OverallRating data={chartData} />
           <NutritionQuality />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="flex flex-col gap-6">
-            <StudentFeedback feedbacks={studentFeedback}/>
+            <StudentFeedback feedbacks={studentFeedback} />
             <FoodIssues />
           </div>
 
           <div className="lg:col-span-2">
-            <TrayLog logs={trayLog}/>
+            <TrayLog logs={trayLog} />
           </div>
         </div>
       </main>

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import api_url from "@/util/url";
 
-
 export default function SignInPage({ onSignInSuccess, onGoToSignUp }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -16,8 +15,6 @@ export default function SignInPage({ onSignInSuccess, onGoToSignUp }) {
   const [loading, setLoading] = useState(false);
   // const [user, setUser] = useState();
 
-
-
   const onSubmit = (e) => {
     console.log("password: ", password + " email: " + email);
     e.preventDefault();
@@ -26,30 +23,29 @@ export default function SignInPage({ onSignInSuccess, onGoToSignUp }) {
       password: password,
     };
 
-    setLoading(true)
-     api_url.post("/vendor/login", body)
+    setLoading(true);
+    api_url
+      .post("/vendor/login", body)
       .then((r) => {
         console.log("Login data:", r.data.payload[0]);
-         if (onSignInSuccess) {
-      onSignInSuccess(r.data.payload[0]);
-    }
+        if (onSignInSuccess) {
+          localStorage.setItem("user", JSON.stringify(r.data.payload[0]));
+          onSignInSuccess(r.data.payload[0]);
+        }
 
         navigate("/overview");
-
       })
       .catch((e) => {
         console.error("Error: ", e.response.data.msg);
         toast.error(e.response.data.msg, {
-      position: "bottom-right"
-    });
+          position: "bottom-right",
+        });
       })
       .finally(() => {
         setLoading(false);
       });
 
     console.log("login success", { email, remember });
-
-
   };
 
   return (
@@ -121,7 +117,9 @@ export default function SignInPage({ onSignInSuccess, onGoToSignUp }) {
                         ? "border-2 border-gray-300 bg-white text-gray-600"
                         : "text-gray-400 hover:text-gray-600")
                     }
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? (
                       <svg

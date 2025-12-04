@@ -42,7 +42,7 @@ const submit = async (req, res) => {
     console.log(sel.rows.length);
 
     const ins = await db.query(
-      "INSERT INTO review(vendor_id, rating, review, date, nis) VALUES ($5, $1, $2, $3, $4) RETURNING *",
+      "INSERT INTO review(vendor_id, rating, message, date, nis) VALUES ($5, $1, $2, $3, $4) RETURNING *",
       [rating, review, fmtDate, nis, vendor_id]
     );
 
@@ -124,12 +124,31 @@ const averageRating = async (req, res) => {
 };
 
 const overallRatingDy = async (req, res) => {
-  const { date } = req.params;
+  const { date, vendor_id } = req.params;
 
   try {
     const query = await db.query(
-      "SELECT COUNT(rating), ROUND(rating) AS reting FROM review WHERE date=$1 GROUP BY reting ORDER BY reting ASC",
-      [date]
+      "SELECT COUNT(rating), ROUND(rating) AS reting FROM review WHERE date=$1 AND vendor_id = $2 GROUP BY reting ORDER BY reting ASC",
+      [date, vendor_id]
+    );
+
+    return res.status(200).json({
+      msg: "Retrieved raiting detail for today",
+      payload: query.rows,
+    });
+  } catch (e) {
+    console.error(e.message);
+    return res.status(500).send("Server error");
+  }
+};
+
+const averageRatingDy = async (req, res) => {
+  const { date, vendor_id } = req.params;
+
+  try {
+    const query = await db.query(
+      "SELECT ROUND(AVG(rating), 1) AS average_rating FROM review WHERE date = $1 AND vendor_id = $2",
+      [date, vendor_id]
     );
 
     return res.status(200).json({
@@ -166,4 +185,5 @@ module.exports = {
   getAllRating,
   averageRating,
   overallRatingDy,
+  averageRatingDy,
 };

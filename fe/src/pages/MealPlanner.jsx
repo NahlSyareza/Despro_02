@@ -13,11 +13,9 @@ function formatUTCDateToYMD(d) {
 }
 
 function getCurrentWeekdays(date = new Date()) {
-  // Find Monday of the current week
-  const dayOfWeek = date.getDay(); // Sunday=0, Monday=1, ..., Saturday=6
+  const dayOfWeek = date.getDay();
   const monday = new Date(date);
   monday.setDate(date.getDate() - ((dayOfWeek + 6) % 7));
-  // Get dates for Monday to Friday
   const weekdays = [];
   for (let i = 0; i < 5; i++) {
     const d = new Date(monday);
@@ -57,7 +55,6 @@ function groupMenusByWeek(menus) {
     if (!weeks[weekKey]) weeks[weekKey] = [];
     weeks[weekKey].push(menu);
   });
-  console.log("grouped weeks: ", weeks);
   return weeks;
 }
 
@@ -81,16 +78,12 @@ export default function MealPlanner({ user }) {
       .then((r) => {
         const menus = r.data.payload;
         const grouped = groupMenusByWeek(menus);
-        console.log("grouped menus from api: ", grouped);
-        console.log("menus from api: ", menus);
         setGroupedMenus(grouped);
       })
       .catch((e) => {
         console.error(e);
       });
   }, [user.vendor_id]);
-
-  console.log("let it go: ", groupedMenus);
 
   const weekdayDates = getCurrentWeekdays(todayDate);
   const dayToDate = {
@@ -124,9 +117,6 @@ export default function MealPlanner({ user }) {
     return obj;
   }
 
-  console.log("selecte dmenu :", selectedMenuData);
-  console.log("selected weekly :", weeklyMenuData);
-
   useEffect(() => {
     const planIndex = parseInt(selectedPlan.split(" ")[1], 10) - 1;
     const menu = menuPlans[planIndex];
@@ -147,8 +137,6 @@ export default function MealPlanner({ user }) {
 
         const menuPlans = responses.map((res) => res.data.payload);
 
-        console.log("All 4 menu plans:", menuPlans);
-
         setMenuPlans(menuPlans);
       } catch (error) {
         console.error(error);
@@ -157,8 +145,6 @@ export default function MealPlanner({ user }) {
 
     fetchMenus();
   }, [selectedDay]);
-
-  console.log("menu plans from api :", menuPlans);
 
   function handleConfirmSelectedMenu() {
     setLoadingConfirm(true);
@@ -183,8 +169,6 @@ export default function MealPlanner({ user }) {
             .then((r) => {
               const menus = r.data.payload;
               const grouped = groupMenusByWeek(menus);
-              console.log("grouped menus from api: ", grouped);
-              console.log("menus from api: ", menus);
               setGroupedMenus(grouped);
               setLoadingConfirm(false);
             })
@@ -218,17 +202,12 @@ export default function MealPlanner({ user }) {
 
       api_url
         .post("/menu/select_menu", body)
-        .then((r) => {
-          const res = r.data;
-          console.log("response selected menu:", res.payload);
-
+        .then(() => {
           api_url
             .get(`menu/get_menu/${user.vendor_id}`)
             .then((r) => {
               const menus = r.data.payload;
               const grouped = groupMenusByWeek(menus);
-              console.log("grouped menus from api: ", grouped);
-              console.log("menus from api: ", menus);
               setGroupedMenus(grouped);
               setLoadingConfirm(false);
             })
@@ -239,11 +218,6 @@ export default function MealPlanner({ user }) {
         .catch((e) => {
           console.error(e);
         });
-
-      console.log(
-        "selected menu data to save :",
-        selectedMenuData + " selected "
-      );
 
       setWeeklyMenuData((prev) => ({
         ...prev,
@@ -261,16 +235,6 @@ export default function MealPlanner({ user }) {
   const { monday, friday } = getWeekRange(today, weekOffset);
   const currentWeekKey = `${monday}_${friday}`;
   const currentWeekMenus = groupedMenus[currentWeekKey] || [];
-  console.log("current week blue: ", groupedMenus);
-  console.log("current week menus: ", currentWeekMenus);
-  console.log("current week key: ", currentWeekKey);
-
-  const prevWeekKey = (() => {
-    const { monday, friday } = getWeekRange(today, -1);
-    return `${monday}_${friday}`;
-  })();
-  const prevWeekMenus = groupedMenus[prevWeekKey] || [];
-  console.log("previous week menus: ", prevWeekMenus);
 
   function handleMenuStatusChange(day, dateStr, exists, menuID) {
     setMenuExistenceMap((prev) => {
@@ -286,8 +250,6 @@ export default function MealPlanner({ user }) {
       };
     });
   }
-
-  console.log("orca: ", menuExistenceMap);
   return (
     <div className="meal-planner">
       <div className="planner-container">

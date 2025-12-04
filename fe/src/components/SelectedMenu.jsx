@@ -1,7 +1,6 @@
 import { Button } from "./ui/button";
 
 export default function SelectedMenu({ items, onConfirm, loading }) {
-  console.log("SelectedMenu items:", items);
   const categoryColors = {
     Carbohydrate: "#fde4d0",
     "Protein 1": "#ffe0dbff",

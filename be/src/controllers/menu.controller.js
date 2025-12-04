@@ -22,7 +22,6 @@ const createMenu = async (req, res) => {
     const getMenus = await db.query(
       "SELECT * FROM menu WHERE date=$1 OR date=$2",
       [kinou, ototoi]
-      // ["2025-11-25", "2025-11-24"]
     );
 
     const getFoods = await db.query("SELECT name, class FROM food_material");

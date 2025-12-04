@@ -89,7 +89,9 @@ export default function OverviewPage() {
       });
 
     api_url
-      .get("/review/overall_rating_dy/2025-12-01")
+      .get(
+        "/review/overall_rating_dy/2025-12-01/86833ad3-d58a-4c7f-a5ab-a8a21648d9e9"
+      )
       .then((r) => {
         const res = r.data;
         const payload = res.payload;

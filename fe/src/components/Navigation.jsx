@@ -1,12 +1,18 @@
 import { NavLink } from "react-router-dom";
 import { Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-export default function Navigation({user}) {
-  console.log("Navigation user:", user.username);
+export default function Navigation({ user }) {
+  const navigate = useNavigate();
+  const handleLogOut = () => {
+    localStorage.removeItem("user");
+    navigate("/signin");
+    window.location.reload();
+  };
+
   return (
     <nav className="navigation">
       <div className="nav-container">
-
         <div className="nav-left">
           <div className="logo">
             <span className="logo-icon">MBG</span>
@@ -15,9 +21,24 @@ export default function Navigation({user}) {
         </div>
 
         <div className="nav-tabs">
-          <NavLink to="/overview" className={({ isActive }) => `nav-tab ${isActive ? "active" : ""}`}>Overview</NavLink>
-          <NavLink to="/analytics" className={({ isActive }) => `nav-tab ${isActive ? "active" : ""}`}>Analytics</NavLink>
-          <NavLink to="/meal-planner" className={({ isActive }) => `nav-tab ${isActive ? "active" : ""}`}>Meal Planner</NavLink>
+          <NavLink
+            to="/overview"
+            className={({ isActive }) => `nav-tab ${isActive ? "active" : ""}`}
+          >
+            Overview
+          </NavLink>
+          <NavLink
+            to="/analytics"
+            className={({ isActive }) => `nav-tab ${isActive ? "active" : ""}`}
+          >
+            Analytics
+          </NavLink>
+          <NavLink
+            to="/meal-planner"
+            className={({ isActive }) => `nav-tab ${isActive ? "active" : ""}`}
+          >
+            Meal Planner
+          </NavLink>
         </div>
 
         <div className="nav-right flex items-center gap-4">
@@ -34,23 +55,28 @@ export default function Navigation({user}) {
               />
             </button>
 
-            <div className="
+            <div
+              className="
               absolute right-0 mt-2
               w-60 rounded-lg shadow-lg
               bg-white border-[#7b5eea] border text-[#7b5eea]
               opacity-0 invisible
               group-hover:opacity-100 group-hover:visible
               transition-all duration-200
-            ">
+            "
+            >
               <ul className="py-2">
                 <li className="px-4 py-2 ">{user?.username ?? "-"}</li>
-                <li className="px-4 py-2 hover:bg-[#dad1ffff] cursor-pointer">Log out</li>
+                <li
+                  onClick={handleLogOut}
+                  className="px-4 py-2 hover:bg-[#dad1ffff] cursor-pointer"
+                >
+                  Log out
+                </li>
               </ul>
             </div>
           </div>
-
         </div>
-
       </div>
     </nav>
   );
