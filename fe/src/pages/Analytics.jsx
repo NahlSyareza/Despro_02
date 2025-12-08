@@ -13,7 +13,7 @@ import { MOCK_RATING_TREND, MOCK_QUALITY_TREND, MOCK_ISSUES } from "@/data/mockD
 
 export default function Analytics() {
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState("30");
+  const [dateRange, setDateRange] = useState("30"); // Default 30 hari
   
   const [ratingTrend, setRatingTrend] = useState([]);
   const [qualityTrend, setQualityTrend] = useState([]);
@@ -33,18 +33,15 @@ export default function Analytics() {
         }, 500);
 
       } else {
-        console.log("Fetching Real Data...");
         try {
             const vendorData = JSON.parse(localStorage.getItem("vendor_data"));
             const vendorId = vendorData?.vendor_id;
             if (!vendorId) return;
 
-            // Panggil 2 Endpoint Utama:
-            // 1. Charts (Trend & Distribusi)
-            // 2. Issue Stats (Statistik Masalah Makanan)
+            // --- PERBAIKAN: Kirim parameter ?days=... ke Backend ---
             const [chartRes, issueRes] = await Promise.all([
-                api_url.get(`/vendor/${vendorId}/charts`),
-                api_url.get(`/review/stats/issues/${vendorId}`)
+                api_url.get(`/vendor/${vendorId}/charts?days=${dateRange}`),
+                api_url.get(`/review/stats/issues/${vendorId}?days=${dateRange}`)
             ]);
 
             // 1. Set Rating Trend (Grafik Ungu)
@@ -59,8 +56,6 @@ export default function Analytics() {
 
             // 3. Set Food Issues (List Masalah)
             if (issueRes.data) {
-                // Backend sudah mengirim format [{name: "Asin", value: 10}, ...]
-                // Kita urutkan dari yang terbesar
                 const sortedIssues = issueRes.data.sort((a, b) => b.value - a.value);
                 setIssueData(sortedIssues);
             }
@@ -74,7 +69,7 @@ export default function Analytics() {
     };
 
     fetchData();
-  }, [dateRange]);
+  }, [dateRange]); // Efek jalan ulang saat dateRange berubah
 
   return (
     <div className="min-h-screen bg-gray-50/50">
@@ -93,7 +88,7 @@ export default function Analytics() {
           </select>
         </div>
 
-        {/* Grafik Utama (Trend) */}
+        {/* Grafik Utama */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <OverallRating data={ratingTrend} loading={loading} />
           <NutritionQuality data={qualityTrend} loading={loading} />

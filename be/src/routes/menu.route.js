@@ -1,13 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const c = require("../controllers/menu.controller");
-const auth = require("../middleware/auth.middleware");
 
-// GET: Generate opsi menu otomatis dari DB
-router.get("/recommendations", auth, c.getMenuRecommendations);
-router.get("/:vendor_id/active", auth, c.getActiveMenu);
+// Route standar
+router.get("/recommendations", c.getMenuRecommendations);
+router.post("/save", c.saveWeeklyPlan);
 
-// POST: Simpan menu yang sudah dipilih user
-router.post("/save", auth, c.saveWeeklyPlan);
+// Route BARU untuk ambil data per range tanggal
+router.get("/:vendor_id/week", c.getWeeklyMenu);
+
+// Legacy
+router.get("/:vendor_id/active", c.getActiveMenu);
 
 module.exports = router;

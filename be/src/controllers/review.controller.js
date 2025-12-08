@@ -105,13 +105,25 @@ const getVendorReviews = async (req, res) => {
 // GET /review/stats/issues/:vendor_id
 const getIssueStatistics = async (req, res) => {
   const { vendor_id } = req.params;
+  const { days } = req.query; // Tangkap parameter days
+
   try {
+    // Buat Filter Tanggal
+    let dateFilter = "";
+    if (days && days !== 'all') {
+      const daysInt = parseInt(days);
+      if (!isNaN(daysInt)) {
+        // r.date mengacu pada tabel review
+        dateFilter = `AND r.date >= CURRENT_DATE - INTERVAL '${daysInt} days'`;
+      }
+    }
+
     const query = `
       SELECT fi.issue_name, COUNT(*) as count
       FROM review r
       CROSS JOIN unnest(r.issue_id) as unnested_id
       JOIN food_issue fi ON fi.issue_id::text = unnested_id
-      WHERE r.vendor_id = $1
+      WHERE r.vendor_id = $1 ${dateFilter}
       GROUP BY fi.issue_name
     `;
     

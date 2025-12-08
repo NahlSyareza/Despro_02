@@ -3,6 +3,7 @@ import QRCode from "react-qr-code";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Printer, Copy, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 export default function QRCodePage() {
   // 1. Ambil Vendor ID dari LocalStorage
@@ -22,7 +23,7 @@ export default function QRCodePage() {
   // Helper untuk Copy Link
   const handleCopy = () => {
     navigator.clipboard.writeText(feedbackUrl);
-    alert("Link berhasil disalin!");
+    toast.success("Link berhasil disalin ke clipboard!");
   };
 
   if (!vendorId) {

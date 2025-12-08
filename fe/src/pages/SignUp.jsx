@@ -4,6 +4,7 @@ import axios from "axios";
 import { API_BASE_URL, IS_MOCK } from "@/util/url";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
+import { toast } from "sonner"; // <--- 1. IMPORT TOAST
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -68,7 +69,7 @@ export default function SignUp() {
             password: formData.password
         });
         
-        alert("Registrasi Berhasil! Silakan Login.");
+        toast.success("Registrasi Berhasil! Silakan Login.");
         navigate("/signin");
       }
     } catch (err) {
