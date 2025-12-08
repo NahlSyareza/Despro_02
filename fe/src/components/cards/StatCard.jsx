@@ -61,7 +61,7 @@ export function StatCard({ kpis }) {
       label: "TOTAL FEEDBACK",
       value:
         safeKpis.feedbackRate != null
-          ? `${safeKpis.feedbackRate.toLocaleString("id-ID")}%`
+          ? `${safeKpis.feedbackRate.toLocaleString("id-ID")}`
           : "—",
       delta: deltas.feedbackRate ?? 0,
     },

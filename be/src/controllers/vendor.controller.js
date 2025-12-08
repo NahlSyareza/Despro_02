@@ -1,6 +1,10 @@
 const db = require("../models/database");
 const bcrypt = require("bcryptjs");
-const logger = require("../utils/logger"); // Import Logger
+const jwt = require("jsonwebtoken"); // <--- WAJIB ADA: Ini yang sebelumnya hilang
+const logger = require("../utils/logger");
+
+// Gunakan secret yang sama dengan middleware auth Anda
+const JWT_SECRET = process.env.JWT_SECRET || "rahasia_negara_api_123";
 
 const register = async (req, res) => {
   const { username, password } = req.body;
@@ -22,8 +26,20 @@ const register = async (req, res) => {
       [username, hashedPassword]
     );
 
+    const vendor = newUser.rows[0];
+
+    // Buat Token untuk user baru
+    const token = jwt.sign(
+      { vendor_id: vendor.vendor_id, username: vendor.username }, 
+      JWT_SECRET, 
+      { expiresIn: "24h" }
+    );
+
     logger.info(`[Register] Success: New vendor '${username}' created`);
-    res.status(201).json({ msg: "Vendor registered!", data: newUser.rows[0] });
+    
+    // Kirim token di response
+    res.status(201).json({ msg: "Vendor registered!", token, data: vendor });
+
   } catch (e) {
     logger.error(`[Register] Error: ${e.message}`);
     res.status(500).send("Server error");
@@ -46,11 +62,23 @@ const login = async (req, res) => {
       return res.status(400).json({ msg: "Invalid Credentials" });
     }
 
+    const vendor = user.rows[0];
+
+    // Buat Token saat login
+    const token = jwt.sign(
+      { vendor_id: vendor.vendor_id, username: vendor.username }, 
+      JWT_SECRET, 
+      { expiresIn: "24h" }
+    );
+
     logger.info(`[Login] Success: '${username}' logged in`);
+    
+    // Kirim token ke frontend
     res.json({
       msg: "Login Success",
-      vendor_id: user.rows[0].vendor_id,
-      username: user.rows[0].username
+      token: token,
+      vendor_id: vendor.vendor_id,
+      username: vendor.username
     });
   } catch (e) {
     logger.error(`[Login] Error: ${e.message}`);
@@ -58,4 +86,29 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+// GET /vendor/:id/stats
+const getDashboardStats = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const trayStats = await db.query(
+      `SELECT COUNT(*) as total_meals, AVG(compliance_score) as avg_compliance 
+       FROM tray WHERE vendor_id = $1`, [id]
+    );
+
+    const reviewStats = await db.query(
+      `SELECT COUNT(*) as total_feedback, AVG(rating) as avg_rating 
+       FROM review WHERE vendor_id = $1`, [id]
+    );
+
+    res.json({
+      meals_analyzed: parseInt(trayStats.rows[0].total_meals) || 0,
+      nutrition_compliance: parseFloat(trayStats.rows[0].avg_compliance || 0).toFixed(1),
+      total_feedback: parseInt(reviewStats.rows[0].total_feedback) || 0,
+      average_rating: parseFloat(reviewStats.rows[0].avg_rating || 0).toFixed(1)
+    });
+  } catch (e) {
+    res.status(500).json({ msg: e.message });
+  }
+};
+
+module.exports = { register, login, getDashboardStats };

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE_URL, IS_MOCK } from "@/util/url";
+import api_url, { IS_MOCK } from "@/util/url";
 
 // Import Komponen
 import OverallRating from "@/components/charts/OverallRating";
@@ -27,7 +26,6 @@ export default function Analytics() {
       if (IS_MOCK) {
         console.log(`🛠️ Analytics (Mock): Range ${dateRange} days`);
         setTimeout(() => {
-            // GUNAKAN DATA IMPORT DI SINI
             setRatingTrend(MOCK_RATING_TREND);
             setQualityTrend(MOCK_QUALITY_TREND);
             setIssueData(MOCK_ISSUES);
@@ -41,64 +39,51 @@ export default function Analytics() {
             const vendorId = vendorData?.vendor_id;
             if (!vendorId) return;
 
-            const [reviewRes, trayRes] = await Promise.all([
-                axios.get(`${API_BASE_URL}/review/vendor/${vendorId}?days=${dateRange}`),
-                axios.get(`${API_BASE_URL}/tray/log/${vendorId}?days=${dateRange}`)
+            // Panggil 2 Endpoint Utama:
+            // 1. Charts (Trend & Distribusi)
+            // 2. Issue Stats (Statistik Masalah Makanan)
+            const [chartRes, issueRes] = await Promise.all([
+                api_url.get(`/vendor/${vendorId}/charts`),
+                api_url.get(`/review/stats/issues/${vendorId}`)
             ]);
 
-            const reviews = reviewRes.data.payload || [];
-            const trays = trayRes.data.payload || [];
+            // 1. Set Rating Trend (Grafik Ungu)
+            if (chartRes.data?.rating_trend) {
+                setRatingTrend(chartRes.data.rating_trend);
+            }
 
-            // --- 1. OLAH DATA ISSUES ---
-            const issuesMap = {};
-            reviews.forEach(r => {
-                const issue = r.issue_id || "Other"; // Pastikan field ini sesuai DB
-                if (issue) issuesMap[issue] = (issuesMap[issue] || 0) + 1;
-            });
-            const processedIssues = Object.entries(issuesMap)
-                .map(([name, value]) => ({ name, value }))
-                .sort((a, b) => b.value - a.value); // Urutkan terbanyak
-            setIssueData(processedIssues);
+            // 2. Set Nutrition Trend (Grafik Hijau)
+            if (chartRes.data?.nutrition_trend) {
+                setQualityTrend(chartRes.data.nutrition_trend);
+            }
 
-            // --- 2. OLAH DATA TREND (RATING & QUALITY) ---
-            // Note: Backend idealnya melakukan agregasi group by date.
-            // Di sini kita lakukan simulasi mapping sederhana agar grafik tidak error.
-            
-            // Contoh Logic Frontend Sederhana: Ambil 5 data terakhir untuk grafik trend
-            // (Untuk hasil akurat, backend harus kirim data per hari)
-            
-            setRatingTrend([
-                { date: "Avg", thisWeek: calculateAvg(reviews, 'rating'), previousWeek: 0 }
-            ]);
-            
-            setQualityTrend([
-                { date: "Avg", thisWeek: calculateAvg(trays, 'compliance_score'), previousWeek: 0 }
-            ]);
-            
+            // 3. Set Food Issues (List Masalah)
+            if (issueRes.data) {
+                // Backend sudah mengirim format [{name: "Asin", value: 10}, ...]
+                // Kita urutkan dari yang terbesar
+                const sortedIssues = issueRes.data.sort((a, b) => b.value - a.value);
+                setIssueData(sortedIssues);
+            }
+
             setLoading(false);
         } catch (err) {
-            console.error(err);
+            console.error("Gagal mengambil data analytics:", err);
             setLoading(false);
         }
       }
     };
 
     fetchData();
-  }, [dateRange]); // Efek dijalankan ulang saat dateRange berubah
-
-  // Helper rata-rata
-  const calculateAvg = (data, key) => {
-      if (!data.length) return 0;
-      const sum = data.reduce((acc, curr) => acc + parseFloat(curr[key] || 0), 0);
-      return (sum / data.length).toFixed(1);
-  };
+  }, [dateRange]);
 
   return (
-    <div className="min-h-screen">
-      <main className="max-w-8xl mx-auto">
-        <div className="mb-8">
+    <div className="min-h-screen bg-gray-50/50">
+      <main className="max-w-8xl mx-auto p-6">
+        
+        {/* Filter Dropdown */}
+        <div className="mb-8 flex justify-start">
           <select 
-            className="px-4 py-2 border border-gray-400 rounded-sm text-foreground bg-background text-sm cursor-pointer hover:bg-gray-50"
+            className="px-4 py-2 border border-gray-200 rounded-lg text-gray-700 bg-white text-sm cursor-pointer hover:border-[#7B5EEA] focus:outline-none focus:ring-2 focus:ring-[#7B5EEA]/20 shadow-sm transition-all"
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
           >
@@ -108,11 +93,13 @@ export default function Analytics() {
           </select>
         </div>
 
+        {/* Grafik Utama (Trend) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <OverallRating data={ratingTrend} loading={loading} />
           <NutritionQuality data={qualityTrend} loading={loading} />
         </div>
 
+        {/* Detail Lainnya */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="flex flex-col gap-6">
             <StudentFeedback />

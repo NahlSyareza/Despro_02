@@ -71,3 +71,37 @@ export const MOCK_STUDENT_FEEDBACKS = [
   { id: 4, name: "Tray_ID 4", rating: 2, date: "24/08/2025", text: "Nasi agak keras hari ini" },
   { id: 5, name: "Tray_ID 5", rating: 4, date: "24/08/2025", text: "Lumayan lah buat makan siang gratis" },
 ];
+
+// --- DATA MEAL PLANNER (REKOMENDASI MENU) ---
+export const MOCK_MENU_RECOMMENDATIONS = {
+  Monday: {
+    "Plan 1": ["Nasi Putih", "Ayam Goreng Lengkuas", "Sayur Asem", "Pisang", "Susu UHT"],
+    "Plan 2": ["Nasi Merah", "Pepes Ikan Mas", "Tumis Kangkung", "Jeruk", "Air Mineral"],
+    "Plan 3": ["Kentang Tumbuk", "Rolade Daging", "Salad Sayur", "Apel", "Jus Jambu"],
+    "Plan 4": ["Nasi Uduk", "Telur Balado", "Bihun Goreng", "Melon", "Teh Tawar"]
+  },
+  Tuesday: {
+    "Plan 1": ["Nasi Kuning", "Ayam Suwir", "Perkedel Kentang", "Semangka", "Air Mineral"],
+    "Plan 2": ["Lontong Sayur", "Telur Rebus", "Labu Siam", "Pepaya", "Teh Manis"],
+    "Plan 3": ["Nasi Putih", "Ikan Kembung Bakar", "Lalapan", "Jeruk Nipis", "Es Jeruk"],
+    "Plan 4": ["Spaghetti", "Sosis Sapi", "Brokoli Rebus", "Anggur", "Susu Coklat"]
+  },
+  Wednesday: {
+    "Plan 1": ["Nasi Putih", "Rendang Sapi", "Daun Singkong", "Nanas", "Air Mineral"],
+    "Plan 2": ["Nasi Goreng", "Telur Mata Sapi", "Acar Timun", "Kerupuk", "Es Teh"],
+    "Plan 3": ["Ubi Rebus", "Ayam Bakar Madu", "Tumis Buncis", "Pir", "Jus Mangga"],
+    "Plan 4": ["Nasi Liwet", "Ikan Asin", "Tahu Tempe", "Pisang", "Air Hangat"]
+  },
+  Thursday: {
+    "Plan 1": ["Nasi Putih", "Soto Ayam", "Tauge & Kol", "Jeruk", "Air Mineral"],
+    "Plan 2": ["Bubur Ayam", "Sate Usus", "Cakwe", "Pisang", "Teh Tawar"],
+    "Plan 3": ["Nasi Merah", "Ikan Fillet Krispi", "Capcay Kuah", "Melon", "Susu Low Fat"],
+    "Plan 4": ["Mie Goreng", "Bakso Sapi", "Sawi Hijau", "Semangka", "Es Lemon Tea"]
+  },
+  Friday: {
+    "Plan 1": ["Nasi Putih", "Gulai Ikan", "Tumis Kacang Panjang", "Salak", "Air Mineral"],
+    "Plan 2": ["Nasi Kebuli", "Daging Kambing", "Acar Nanas", "Kurma", "Susu Kambing"],
+    "Plan 3": ["Burger Tempe", "Kentang Goreng", "Selada & Tomat", "Apel", "Soft Drink"],
+    "Plan 4": ["Nasi Bakar", "Ayam Jamur", "Daun Kemangi", "Jeruk", "Teh Botol"]
+  }
+};

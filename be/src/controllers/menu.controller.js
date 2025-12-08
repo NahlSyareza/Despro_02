@@ -19,7 +19,6 @@ const getMenuRecommendations = async (req, res) => {
     }
 
     // 2. Grouping berdasarkan Kelas/Kategori
-    // Logika filter fleksibel (case-insensitive)
     const grouped = {
       Karbo: foods.filter(f => /karbo|carbo/i.test(f.class)),
       Protein: foods.filter(f => /protein|lauk/i.test(f.class)),
@@ -43,14 +42,12 @@ const getMenuRecommendations = async (req, res) => {
         const buah = getRandomItem(grouped.Buah);
         const minum = getRandomItem(grouped.Minum);
         
-        // Format array string agar sesuai dengan Frontend
-        // Urutan Wajib: [Karbo, Protein, Sayur, Buah, Minum]
         recommendations[day][`Plan ${i}`] = [
           karbo ? karbo.name : "Nasi Putih",
           protein ? protein.name : "Telur Dadar",
           sayur ? sayur.name : "Tumis Kangkung",
           buah ? buah.name : "Pisang",
-          minum ? minum.name : "Air Putih" // Default jika kosong
+          minum ? minum.name : "Air Putih"
         ];
       }
     });
@@ -70,7 +67,6 @@ const getMenuRecommendations = async (req, res) => {
 
 // Endpoint 2: Simpan Menu Terpilih ke Database
 const saveWeeklyPlan = async (req, res) => {
-  // Frontend mengirim object menu lengkap dan vendor_id
   const { weeklyPlan, vendor_id } = req.body; 
   
   if (!weeklyPlan || !vendor_id) {
@@ -78,15 +74,18 @@ const saveWeeklyPlan = async (req, res) => {
   }
 
   try {
-    // Simpan ke tabel 'menus'
-    // Kolom 'food_items' diasumsikan bertipe JSONB di database
+    // PERBAIKAN: 
+    // 1. Menggunakan tabel 'menu' (singular) sesuai tables.sql
+    // 2. Menggunakan kolom 'foods' (bukan food_items)
+    // 3. Membungkus JSON string dalam array [] karena kolom 'foods' bertipe TEXT[]
     const query = `
-        INSERT INTO menus (vendor_id, food_items, date) 
+        INSERT INTO menu (vendor_id, foods, date) 
         VALUES ($1, $2, NOW())
         RETURNING menu_id
     `;
     
-    const values = [vendor_id, JSON.stringify(weeklyPlan)];
+    // Kita simpan seluruh JSON plan sebagai satu string di elemen pertama array
+    const values = [vendor_id, [JSON.stringify(weeklyPlan)]];
     
     const result = await db.query(query, values);
   
@@ -99,7 +98,47 @@ const saveWeeklyPlan = async (req, res) => {
   }
 };
 
+// GET /menu/:vendor_id/active
+const getActiveMenu = async (req, res) => {
+  const { vendor_id } = req.params;
+  try {
+    // PERBAIKAN: Menggunakan tabel 'menu'
+    const result = await db.query(
+      `SELECT * FROM menu 
+       WHERE vendor_id = $1 
+       ORDER BY date DESC 
+       LIMIT 1`, 
+      [vendor_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(200).json({ payload: null, msg: "Belum ada menu tersimpan." });
+    }
+
+    // Karena kita menyimpannya sebagai array string [ "{...}" ], 
+    // kita ambil elemen pertama dan parse kembali menjadi JSON Object
+    let activePlan = null;
+    if (result.rows[0].foods && result.rows[0].foods.length > 0) {
+        try {
+            activePlan = JSON.parse(result.rows[0].foods[0]);
+        } catch (err) {
+            logger.warn("[Menu] Gagal parsing JSON menu dari DB");
+        }
+    }
+
+    return res.status(200).json({ 
+      payload: activePlan, 
+      date: result.rows[0].date 
+    });
+
+  } catch (e) {
+    logger.error(`[Menu Get Error]: ${e.message}`);
+    return res.status(500).send("Server error");
+  }
+};
+
 module.exports = {
   getMenuRecommendations,
-  saveWeeklyPlan
+  saveWeeklyPlan,
+  getActiveMenu
 };

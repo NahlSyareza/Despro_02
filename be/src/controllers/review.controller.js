@@ -1,20 +1,17 @@
 const db = require("../models/database");
-const logger = require("../utils/logger"); // Import Logger
+const logger = require("../utils/logger"); 
 
+// GET /review/issues
 const getFoodIssues = async (req, res) => {
   try {
-    const result = await db.query("SELECT issue_type FROM food_issue");
-    // Mengembalikan array string sederhana: ["Rasa Hambar", "Dingin", ...]
-    const issues = result.rows.map(row => row.issue_type);
-    res.json(issues);
+    const result = await db.query("SELECT issue_id, issue_name FROM food_issue");
+    res.json(result.rows);
   } catch (e) {
-    logger.error(`[Issues] Error: ${e.message}`);
-    res.status(500).send("Server Error");
+    res.status(500).send("Error fetching issues");
   }
 };
 
 const submitReview = async (req, res) => {
-  // Ubah issue_type jadi issue_types (plural, array)
   const { vendor_id, nis, rating, message, issue_types } = req.body;
 
   try {
@@ -33,18 +30,16 @@ const submitReview = async (req, res) => {
       return res.status(403).json({ msg: "Anda sudah memberikan review hari ini." });
     }
 
-    // 2. Lookup UUID untuk BANYAK issue sekaligus
-    let issueIdArray = null;
+    // 2. Lookup UUID
+    let issueIdArray = []; 
 
     if (issue_types && Array.isArray(issue_types) && issue_types.length > 0) {
-        // Query menggunakan ANY untuk mencocokkan array string
         const issueRes = await db.query(
-            "SELECT issue_id FROM food_issues WHERE issue_type = ANY($1::text[])", 
+            "SELECT issue_id FROM food_issue WHERE issue_name = ANY($1::text[])", 
             [issue_types]
         );
 
         if (issueRes.rows.length > 0) {
-            // Ambil semua UUID yang ditemukan
             issueIdArray = issueRes.rows.map(row => row.issue_id);
         }
     }
@@ -70,12 +65,25 @@ const getVendorReviews = async (req, res) => {
   const { days } = req.query;
 
   try {
-    let queryText = "SELECT * FROM review WHERE vendor_id = $1";
+    // --- PERBAIKAN QUERY DI SINI ---
+    // Kita tambahkan subquery untuk mengambil array 'issue_names' berdasarkan 'issue_id'
+    let queryText = `
+      SELECT r.*, 
+      (
+        SELECT COALESCE(array_agg(fi.issue_name), '{}')
+        FROM food_issue fi
+        WHERE fi.issue_id::text = ANY(r.issue_id)
+      ) as issue_names
+      FROM review r 
+      WHERE r.vendor_id = $1
+    `;
+    
     const queryParams = [vendor_id];
 
     if (days && days !== 'all') {
       const daysInt = parseInt(days);
       if (!isNaN(daysInt)) {
+        // Perhatikan index parameter $2 karena $1 sudah dipakai vendor_id
         queryText += ` AND date >= CURRENT_DATE - INTERVAL '${daysInt} days'`;
       }
     }
@@ -94,4 +102,32 @@ const getVendorReviews = async (req, res) => {
   }
 };
 
-module.exports = { getFoodIssues, submitReview, getVendorReviews };
+// GET /review/stats/issues/:vendor_id
+const getIssueStatistics = async (req, res) => {
+  const { vendor_id } = req.params;
+  try {
+    const query = `
+      SELECT fi.issue_name, COUNT(*) as count
+      FROM review r
+      CROSS JOIN unnest(r.issue_id) as unnested_id
+      JOIN food_issue fi ON fi.issue_id::text = unnested_id
+      WHERE r.vendor_id = $1
+      GROUP BY fi.issue_name
+    `;
+    
+    const result = await db.query(query, [vendor_id]);
+    
+    const formattedData = result.rows.map(row => ({
+        name: row.issue_name,
+        value: parseInt(row.count)
+    }));
+
+    res.json(formattedData);
+
+  } catch (e) {
+    logger.error(`[Review Stats Error]: ${e.message}`);
+    res.status(500).send("Server error");
+  }
+};
+
+module.exports = { getFoodIssues, submitReview, getVendorReviews, getIssueStatistics };

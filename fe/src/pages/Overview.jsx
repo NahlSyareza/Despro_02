@@ -10,7 +10,7 @@ import { MOCK_OVERVIEW_KPI, MOCK_OVERVIEW_RATINGS, MOCK_OVERVIEW_QUALITY } from 
 export default function OverviewPage() {
   const [kpis, setKpis] = useState({
     mealsAnalyzed: 0,
-    feedbackRate: 0,
+    feedbackRate: 0, // Backend mengirim total_feedback (jumlah), bukan rate (%)
     averageRating: 0,
     nutritionCompliance: 0,
     deltas: {
@@ -29,10 +29,7 @@ export default function OverviewPage() {
     async function fetchAll() {
       // --- LOGIKA MOCK ---
       if (IS_MOCK) {
-        console.log("🛠️ Overview: Using Mock Data");
-        
         if (!cancelled) {
-          // GUNAKAN DATA IMPORT
           setKpis(MOCK_OVERVIEW_KPI);
           setRatings(MOCK_OVERVIEW_RATINGS);
           setQuality(MOCK_OVERVIEW_QUALITY);
@@ -41,31 +38,47 @@ export default function OverviewPage() {
       }
 
       // --- LOGIKA REAL API ---
-      console.log("🌍 Mode Real: Fetching KPI API");
       try {
-          const date = new Date().toISOString().split('T')[0]; // Hari ini
-          
-          // Contoh pengambilan data KPI real (Pastikan endpoint backend sudah ada)
-          // Jika belum ada endpoint spesifik, biarkan ini atau handle error
-          const [ratingRes, overallRes] = await Promise.all([
-             api_url.get(`/review/average_rating/${date}`),
-             api_url.get(`/review/overall_rating_dy/${date}`)
+          const vendorData = JSON.parse(localStorage.getItem("vendor_data"));
+          const vendorId = vendorData?.vendor_id;
+
+          if (!vendorId) return;
+
+          // 1. Fetch KPI Stats & Charts sekaligus (Parallel)
+          // Note: Backend Anda menggunakan method POST untuk stats sesuai route vendor.route.js
+          const [statsRes, chartRes] = await Promise.all([
+             api_url.post(`/vendor/${vendorId}/stats`), 
+             api_url.get(`/vendor/${vendorId}/charts`)
           ]);
 
-          if (!cancelled && ratingRes.data?.payload?.[0]) {
-             const avg = parseFloat(ratingRes.data.payload[0].avg);
+          if (!cancelled && statsRes.data) {
+             const { meals_analyzed, nutrition_compliance, total_feedback, average_rating } = statsRes.data;
+             
              setKpis(prev => ({
                  ...prev,
-                 averageRating: isNaN(avg) ? 0 : avg.toFixed(1)
+                 mealsAnalyzed: meals_analyzed,
+                 nutritionCompliance: nutrition_compliance,
+                 feedbackRate: total_feedback, // Menampilkan total count
+                 averageRating: average_rating
              }));
           }
 
-          if (!cancelled && overallRes.data?.payload) {
-             const fmtPayload = overallRes.data.payload.map(({ reting: rating, ...rest }) => ({
-                rating,
-                ...rest,
-              }));
-              setRatings(fmtPayload);
+          if (!cancelled && chartRes.data) {
+             // Mapping Distribusi Rating (Bar Chart)
+             if (chartRes.data.rating_distribution) {
+                // Format Backend: { star: 1, count: 5 } -> Frontend: { rating: 1, count: 5 }
+                const fmtRatings = chartRes.data.rating_distribution.map(item => ({
+                    rating: item.star,
+                    count: item.count
+                }));
+                setRatings(fmtRatings);
+             }
+
+             // Mapping Kualitas Nutrisi (Donut Chart)
+             if (chartRes.data.quality_distribution) {
+                // Backend sudah mengirim format { name, value }, tinggal tambah warna jika perlu di komponen
+                setQuality(chartRes.data.quality_distribution);
+             }
           }
 
       } catch (e) {

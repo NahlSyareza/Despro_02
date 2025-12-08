@@ -7,6 +7,7 @@ import Feedback from "./pages/Feedback";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Review from "./pages/Review"; // Jangan lupa import halaman Review
+import QRCodePage from "./pages/QRCodePage"; // <--- IMPORT INI
 import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
@@ -38,6 +39,7 @@ function Layout() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/meal-planner" element={<MealPlanner />} />
             <Route path="/reviews" element={<Review />} />
+            <Route path="/qr" element={<QRCodePage />} />
           </Route>
 
           {/* Catch-all: Redirect ke Login jika halaman tidak ditemukan */}
