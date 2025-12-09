@@ -69,19 +69,23 @@ const saveWeeklyPlan = async (req, res) => {
     // Loop 5 Hari (Senin - Jumat)
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
     
-    // Kita proses satu per satu
+    // Loop 5 hari kerja
     for (let i = 0; i < 5; i++) {
         const dayName = days[i];
         const dayData = weeklyPlan[dayName];
 
-        if (dayData) {
-            // Hitung tanggal untuk hari ini (Senin + i hari)
-            const currentObjDate = new Date(startDate);
-            currentObjDate.setDate(currentObjDate.getDate() + i);
-            const dateStr = currentObjDate.toISOString().split('T')[0];
+        // Hitung tanggal: startDate + i hari
+        // Kita asumsikan startDate string "YYYY-MM-DD" sudah benar dari frontend
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
 
-            // Format makanan ke Array String sederhana untuk Database
-            // Struktur dayData dari frontend: { Carbohydrate: ["Nasi"], Protein: ["Ayam"] ... }
+        // LANGKAH 1: SELALU HAPUS DATA LAMA (Fix bug delete)
+        // Kita hapus dulu menu di tanggal & vendor ini, entah user mau isi baru atau kosongkan
+        await db.query("DELETE FROM menu WHERE vendor_id = $1 AND date = $2", [vendor_id, dateStr]);
+
+        // LANGKAH 2: INSERT BARU (Hanya jika ada datanya)
+        if (dayData) {
             const foodArray = [
                 dayData.Carbohydrate?.[0] || "-",
                 dayData.Protein?.[0] || "-",
@@ -90,10 +94,6 @@ const saveWeeklyPlan = async (req, res) => {
                 dayData.Drink?.[0] || "-"
             ];
 
-            // 1. Hapus menu lama di tanggal tersebut (jika ada) - Upsert manual
-            await db.query("DELETE FROM menu WHERE vendor_id = $1 AND date = $2", [vendor_id, dateStr]);
-            
-            // 2. Insert menu baru
             await db.query(
                 "INSERT INTO menu (vendor_id, date, foods) VALUES ($1, $2, $3)",
                 [vendor_id, dateStr, foodArray]

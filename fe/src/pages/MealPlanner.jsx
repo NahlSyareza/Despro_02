@@ -48,6 +48,14 @@ export default function MealPlanner() {
 
   const currentWeekStart = getWeekStartDate(currentDate, selectedWeekIndex);
 
+
+  const formatDateLocal = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // --- 1. FETCH DATA (SAAT MINGGU BERUBAH) ---
   useEffect(() => {
     async function fetchData() {
@@ -70,17 +78,16 @@ export default function MealPlanner() {
         const vendorData = JSON.parse(localStorage.getItem("vendor_data") || "{}");
         if (vendorData.vendor_id) {
             // Hitung Start Date (Senin) dan End Date (Jumat)
-            const startStr = currentWeekStart.toISOString().split('T')[0];
+            const startStr = formatDateLocal(currentWeekStart);
+            
             const endObj = new Date(currentWeekStart);
-            endObj.setDate(endObj.getDate() + 5); // Sampai Sabtu/Jumat
-            const endStr = endObj.toISOString().split('T')[0];
+            endObj.setDate(endObj.getDate() + 6); // Ambil range seminggu penuh
+            const endStr = formatDateLocal(endObj);
 
-            try {
-                const menuRes = await api_url.get(`/menu/${vendorData.vendor_id}/week?startDate=${startStr}&endDate=${endStr}`);
-                if (menuRes.data?.payload) {
-                    setWeeklyMenuData(menuRes.data.payload);
-                }
-            } catch (err) { console.error("Menu fetch error", err); }
+            const menuRes = await api_url.get(`/menu/${vendorData.vendor_id}/week?startDate=${startStr}&endDate=${endStr}`);
+            if (menuRes.data?.payload) {
+                setWeeklyMenuData(menuRes.data.payload);
+            }
         }
       } catch (e) {
         console.error("Error fetching menu:", e);
@@ -145,13 +152,14 @@ export default function MealPlanner() {
 
     try {
       // Kirim tanggal Senin minggu ini sebagai referensi penyimpanan
-      const startStr = currentWeekStart.toISOString().split('T')[0];
-
+      const startStr = formatDateLocal(currentWeekStart);
+      
       await api_url.post("/menu/save", {
         vendor_id: vendorData.vendor_id,
         weeklyPlan: weeklyMenuData,
-        startDate: startStr // Penting!
+        startDate: startStr // Kirim tanggal lokal yang benar (Senin)
       });
+      
       toast.success("Menu berhasil disimpan ke database!", { id: toastId });
 
     } catch (e) {

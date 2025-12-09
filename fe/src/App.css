@@ -95,7 +95,7 @@
   font-size: 14px;
   color: #999faa;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 10px 0;
   border-bottom: 2px solid transparent;
   transition: all 0.3s ease;
 }
@@ -108,8 +108,8 @@
   color: #ffffff;
   font-weight: 700;
   background: #7b5eea;
-  padding-top: -10px;
-  padding-bottom: -10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   padding-right: 15px;
   padding-left: 15px;
   border-radius: 50px;
