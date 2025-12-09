@@ -17,6 +17,7 @@ const COLORS = {
 
 export function OverviewNutrition({ quality }) {
   const donutData = useMemo(() => {
+    // Cek jika data kosong
     if (!quality || quality.length === 0) return [];
 
     const order = ["Good", "Fair", "Poor"];
@@ -26,10 +27,11 @@ export function OverviewNutrition({ quality }) {
       Poor: COLORS.poor,
     };
 
+    // PERBAIKAN: Menggunakan 'q.name' bukan 'q.label' sesuai struktur mockData.js
     return order
-      .map((label) => quality.find((q) => q.label === label))
+      .map((label) => quality.find((q) => q.name === label)) 
       .filter(Boolean)
-      .map((q) => ({ ...q, fill: colorMap[q.label] }));
+      .map((q) => ({ ...q, fill: colorMap[q.name] }));
   }, [quality]);
 
   return (
@@ -44,7 +46,7 @@ export function OverviewNutrition({ quality }) {
               <Pie
                 data={donutData}
                 dataKey="value"
-                nameKey="label"
+                nameKey="name" // PERBAIKAN: Menggunakan 'name' sebagai key
                 innerRadius={70}
                 outerRadius={126}
                 startAngle={90}
@@ -52,8 +54,8 @@ export function OverviewNutrition({ quality }) {
                 paddingAngle={2}
                 cornerRadius={4}
               >
-                {donutData.map((entry) => (
-                  <Cell key={entry.label} fill={entry.fill} />
+                {donutData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
               </Pie>
 
@@ -69,15 +71,16 @@ export function OverviewNutrition({ quality }) {
           </ResponsiveContainer>
         </div>
 
+        {/* Legend Section */}
         <div className="flex-1 ml-4 space-y-2">
-          {donutData.map((item) => (
-            <div key={item.label} className="flex items-center gap-2">
+          {donutData.map((item, index) => (
+            <div key={`legend-${index}`} className="flex items-center gap-2">
               <span
                 className="h-2.5 w-2.5 rounded-full"
                 style={{ backgroundColor: item.fill }}
               />
               <span className="text-[14px] text-[#928E95] whitespace-nowrap">
-                {item.label}
+                {item.name} {/* PERBAIKAN: Menggunakan item.name */}
               </span>
             </div>
           ))}

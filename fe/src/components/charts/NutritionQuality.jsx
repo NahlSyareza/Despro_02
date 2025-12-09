@@ -1,115 +1,112 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import React from "react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const CustomDot = (props) => {
-  const { cx, cy, stroke, payload, dataKey } = props;
-
-  if (dataKey === 'thisWeek') {
+export default function NutritionQuality({ data, loading }) {
+  // Jika loading, tampilkan Skeleton placeholder
+  if (loading) {
     return (
-      <g>
-        <circle cx={cx} cy={cy} r={8} fill={stroke} fillOpacity={0.3} />
-        <circle cx={cx} cy={cy} r={3.5} stroke="white"  strokeWidth={1} fill="#8b5cf6" />
-      </g>
+      <Card className="col-span-1 shadow-sm border-gray-100 h-full">
+        <CardHeader>
+          <Skeleton className="h-6 w-[180px]" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[250px] w-full rounded-xl" />
+        </CardContent>
+      </Card>
     );
   }
 
+  // Custom Tooltip agar terlihat rapi saat di-hover
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-100 shadow-lg rounded-lg text-sm">
+          <p className="font-semibold text-gray-700 mb-1">{label}</p>
+          <p className="text-[#22c55e] font-medium">
+            Score: {payload[0].value}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
-      <g>
-        <circle cx={cx} cy={cy} r={8} fill={stroke} fillOpacity={0.4} />
-        <circle cx={cx} cy={cy} r={3.5} stroke="white"  strokeWidth={1} fill="#61d2a5ff" />
-      </g>
-    );
-};
-
-
-const data = [
-  { date: "20 Oct", thisWeek: 75, previousWeek: 65 },
-  { date: "21 Oct", thisWeek: 82, previousWeek: 70 },
-  { date: "22 Oct", thisWeek: 78, previousWeek: 72 },
-  { date: "23 Oct", thisWeek: 85, previousWeek: 68 },
-  { date: "24 Oct", thisWeek: 80, previousWeek: 74 },
-  { date: "25 Oct", thisWeek: 24, previousWeek: 18 },
-]
-
-export function NutritionQuality() {
- const legendPayload = [
-     { value: 'This Week', type: 'circle', color: '#8b5cf6', id: 'thisWeek' },
-     { value: 'Previous Week', type: 'circle', color: '#6ee7b7', id: 'previousWeek' },
-   ];
- 
-   const CustomLegend = ({ payload }) => {
-     return (
-       <ul style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
-         {payload.map((entry, index) => (
-           <li key={`item-${index}`} style={{ marginRight: '10px', display: 'flex', alignItems: 'center', color: '#4b5563', fontSize: '12px' }}>
-             <span style={{ 
-               display: 'inline-block', 
-               width: '10px', 
-               height: '10px', 
-               borderRadius: '50%', 
-               backgroundColor: entry.color, 
-               marginRight: '5px' 
-             }}></span>
-             {entry.value}
-           </li>
-         ))}
-       </ul>
-     );
-   };
- 
-   return (
-     <Card>
-       <CardHeader>
-        <CardTitle>NUTRITION QUALITY</CardTitle>
-        <CardDescription>
-          Provides a score representing the nutritional adequacy of the menu to ensure it meets daily dietary requirements.
-         </CardDescription>
-       </CardHeader>
-       <CardContent>
-         <ResponsiveContainer width="100%" height={250}>
-           <LineChart data={data}  margin={{ top: 5, right: 20, left: 20, bottom: 5 }} >
-             <CartesianGrid strokeDasharray="7 7" stroke="#d3d4d6ff" />
-             <XAxis 
-               dataKey="date" 
-               stroke="#9ca3af" 
-               padding={{ left: 30, right: 30 }} 
-               tickLine={false} 
-               axisLine={false}
-             />
-             <YAxis 
-               stroke="#5a5c61ff" 
-               orientation="right" 
-               domain={[0.0, 100.0]} 
-               tickCount={6} 
-              tickFormatter={(value) => `${value}%`}
-               tickLine={false} 
-               axisLine={false} 
-             />
-             <Tooltip />
-             <Line 
-               type="monotone" 
-               dataKey="thisWeek" 
-               stroke="#8b5cf6" 
-               strokeWidth={2} 
-               dot={<CustomDot dataKey="thisWeek" />}
-               activeDot={{ r: 6 }} 
-             />
-             
-             {/* Green Line - Previous Week (using a dashed stroke and simpler dot) */}
-             <Line 
-               type="monotone" 
-               dataKey="previousWeek" 
-               stroke="#6ee7b7" 
-               strokeWidth={2} 
-               dot={<CustomDot dataKey="thisWeek" />}
-               activeDot={{ r: 6 }} 
-             />
-             
-             
-           </LineChart>
-         </ResponsiveContainer>
-         <CustomLegend payload={legendPayload} />
-       </CardContent>
-     </Card>
-   )
+    <Card className="col-span-1 shadow-sm border-gray-100">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-bold text-gray-800">
+            Nutrition Quality Trend
+          </CardTitle>
+          {/* Badge Indikator rata-rata atau status */}
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-[#22c55e]"></span>
+            <span className="text-xs text-gray-500 font-medium">Compliance Score</span>
+          </div>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        <div className="h-[300px] w-full mt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={data}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <defs>
+                {/* Gradient Fill untuk area di bawah garis */}
+                <linearGradient id="colorQuality" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                vertical={false} 
+                stroke="#f0f0f0" 
+              />
+              
+              <XAxis 
+                dataKey="date" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: "#6b7280", fontSize: 12 }} 
+                dy={10}
+              />
+              
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: "#6b7280", fontSize: 12 }} 
+                domain={[0, 100]} // Asumsi skor 0-100
+              />
+              
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#22c55e", strokeWidth: 1, strokeDasharray: "4 4" }} />
+              
+              <Area
+                type="monotone"
+                dataKey="thisWeek"
+                stroke="#22c55e"
+                strokeWidth={3}
+                fillOpacity={1}
+                fill="url(#colorQuality)"
+                activeDot={{ r: 6, strokeWidth: 0 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }

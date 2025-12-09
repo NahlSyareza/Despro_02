@@ -1,169 +1,145 @@
 const db = require("../models/database");
+const logger = require("../utils/logger"); 
 
-const getAll = async (req, res) => {
+// GET /review/issues
+const getFoodIssues = async (req, res) => {
   try {
-    const query = await db.query("SELECT * FROM review");
-
-    return res.status(200).json({
-      msg: "Ale ale ale",
-      payload: query.rows,
-    });
+    const result = await db.query("SELECT issue_id, issue_name FROM food_issue");
+    res.json(result.rows);
   } catch (e) {
-    console.error(e.message);
-    return res.status(500).send("Server error");
+    res.status(500).send("Error fetching issues");
   }
 };
 
-const submit = async (req, res) => {
-  const { rating, review, vendor_id, issue_id } = req.body;
-  const { nis } = req.params;
+const submitReview = async (req, res) => {
+  const { vendor_id, nis, rating, message, issue_types } = req.body;
 
   try {
-    const today = new Date();
-
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, "0");
-    const day = today.getDate().toString().padStart(2, "0");
-
-    const fmtDate = `${year}-${month}-${day}`;
-
-    const sel = await db.query(
-      "SELECT * FROM review WHERE nis=$1 AND date=$2",
-      [nis, fmtDate]
-    );
-
-    if (sel.rows.length > 0) {
-      return res.status(200).json({
-        msg: "Entry for this day is already submitted!",
-        payload: [],
-      });
+    if (!vendor_id || !nis || !rating) {
+      return res.status(400).json({ msg: "Data tidak lengkap" });
     }
 
-    console.log(sel.rows.length);
-
-    const ins = await db.query(
-      "INSERT INTO review(vendor_id, rating, review, date, nis) VALUES ($5, $1, $2, $3, $4) RETURNING *",
-      [rating, review, fmtDate, nis, vendor_id]
+    // 1. Cek Duplikat
+    const duplicateCheck = await db.query(
+      `SELECT review_id FROM review 
+       WHERE vendor_id = $1 AND nis = $2 AND date::date = CURRENT_DATE`, 
+      [vendor_id, nis]
     );
 
-    return res
-      .status(200)
-      .json({ msg: "Submitted new entry for today!", payload: ins.rows });
-  } catch (e) {
-    console.error(e.message);
-    return res.status(500).send("Server error");
-  }
-};
-
-const mockingbird = async (req, res) => {
-  const { rating, review, vendor_id, date } = req.body;
-  const { nis } = req.params;
-
-  try {
-    const sel = await db.query(
-      "SELECT * FROM review WHERE nis=$1 AND date=$2",
-      [nis, date]
-    );
-
-    if (sel.rows.length > 0) {
-      return res.status(200).json({
-        msg: "Entry for this day is already submitted!",
-        payload: [],
-      });
+    if (duplicateCheck.rows.length > 0) {
+      return res.status(403).json({ msg: "Anda sudah memberikan review hari ini." });
     }
 
-    console.log(sel.rows.length);
+    // 2. Lookup UUID
+    let issueIdArray = []; 
 
-    const ins = await db.query(
-      "INSERT INTO review(vendor_id, rating, review, date, nis) VALUES ($5, $1, $2, $3, $4) RETURNING *",
-      [rating, review, date, nis, vendor_id]
+    if (issue_types && Array.isArray(issue_types) && issue_types.length > 0) {
+        const issueRes = await db.query(
+            "SELECT issue_id FROM food_issue WHERE issue_name = ANY($1::text[])", 
+            [issue_types]
+        );
+
+        if (issueRes.rows.length > 0) {
+            issueIdArray = issueRes.rows.map(row => row.issue_id);
+        }
+    }
+
+    // 3. Simpan
+    await db.query(
+      `INSERT INTO review (vendor_id, nis, rating, message, issue_id, date)
+       VALUES ($1, $2, $3, $4, $5, NOW())`,
+      [vendor_id, nis, rating, message, issueIdArray]
     );
 
-    return res
-      .status(200)
-      .json({ msg: "Submitted new entry for today!", payload: ins.rows });
+    logger.info(`[Review] Success: NIS ${nis}`);
+    res.status(201).json({ msg: "Review berhasil dikirim! Terima kasih." });
+
   } catch (e) {
-    console.error(e.message);
-    return res.status(500).send("Server error");
+    logger.error(`[Review Error]: ${e.message}`);
+    res.status(500).send("Server Error");
   }
 };
 
-const getAllRating = async (req, res) => {
-  try {
-    const query = await db.query(
-      "SELECT date, AVG(rating) FROM review GROUP BY date;"
-    );
+const getVendorReviews = async (req, res) => {
+  const { vendor_id } = req.params;
+  const { days } = req.query;
 
+  try {
+    // --- PERBAIKAN QUERY DI SINI ---
+    // Kita tambahkan subquery untuk mengambil array 'issue_names' berdasarkan 'issue_id'
+    let queryText = `
+      SELECT r.*, 
+      (
+        SELECT COALESCE(array_agg(fi.issue_name), '{}')
+        FROM food_issue fi
+        WHERE fi.issue_id::text = ANY(r.issue_id)
+      ) as issue_names
+      FROM review r 
+      WHERE r.vendor_id = $1
+    `;
+    
+    const queryParams = [vendor_id];
+
+    if (days && days !== 'all') {
+      const daysInt = parseInt(days);
+      if (!isNaN(daysInt)) {
+        // Perhatikan index parameter $2 karena $1 sudah dipakai vendor_id
+        queryText += ` AND date >= CURRENT_DATE - INTERVAL '${daysInt} days'`;
+      }
+    }
+
+    queryText += " ORDER BY date DESC";
+
+    const query = await db.query(queryText, queryParams);
+    
     return res.status(200).json({
-      msg: "Retrieved all ratings per date",
+      msg: "Reviews retrieved",
       payload: query.rows,
     });
   } catch (e) {
-    console.error(e.message);
+    logger.error(`[Review Log] Error: ${e.message}`);
     return res.status(500).send("Server error");
   }
 };
 
-const averageRating = async (req, res) => {
-  const { date } = req.params;
+// GET /review/stats/issues/:vendor_id
+const getIssueStatistics = async (req, res) => {
+  const { vendor_id } = req.params;
+  const { days } = req.query; // Tangkap parameter days
 
   try {
-    const query = await db.query(
-      "SELECT date, AVG(rating) FROM review WHERE date=$1 GROUP BY date",
-      [date]
-    );
+    // Buat Filter Tanggal
+    let dateFilter = "";
+    if (days && days !== 'all') {
+      const daysInt = parseInt(days);
+      if (!isNaN(daysInt)) {
+        // r.date mengacu pada tabel review
+        dateFilter = `AND r.date >= CURRENT_DATE - INTERVAL '${daysInt} days'`;
+      }
+    }
 
-    return res.status(200).json({
-      msg: "Retrieved ratings for today",
-      payload: query.rows,
-    });
+    const query = `
+      SELECT fi.issue_name, COUNT(*) as count
+      FROM review r
+      CROSS JOIN unnest(r.issue_id) as unnested_id
+      JOIN food_issue fi ON fi.issue_id::text = unnested_id
+      WHERE r.vendor_id = $1 ${dateFilter}
+      GROUP BY fi.issue_name
+    `;
+    
+    const result = await db.query(query, [vendor_id]);
+    
+    const formattedData = result.rows.map(row => ({
+        name: row.issue_name,
+        value: parseInt(row.count)
+    }));
+
+    res.json(formattedData);
+
   } catch (e) {
-    console.error(e.message);
-    return res.status(500).send("Server error");
+    logger.error(`[Review Stats Error]: ${e.message}`);
+    res.status(500).send("Server error");
   }
 };
 
-const overallRatingDy = async (req, res) => {
-  const { date } = req.params;
-
-  try {
-    const query = await db.query(
-      "SELECT COUNT(rating), ROUND(rating) AS reting FROM review WHERE date=$1 GROUP BY reting ORDER BY reting ASC",
-      [date]
-    );
-
-    return res.status(200).json({
-      msg: "Retrieved raiting detail for today",
-      payload: query.rows,
-    });
-  } catch (e) {
-    console.error(e.message);
-    return res.status(500).send("Server error");
-  }
-};
-
-const getRecent = async (req, res) => {
-  try {
-    const query = await db.query(
-      "SELECT * FROM review ORDER BY date DESC LIMIT 5;"
-    );
-
-    return res.status(200).json({
-      msg: "Retrieved 5 recent entries!",
-      payload: query.rows,
-    });
-  } catch (e) {
-    console.error(e.message);
-    return res.status(500).send("Server error");
-  }
-};
-
-module.exports = {
-  submit,
-  getAll,
-  getRecent,
-  mockingbird,
-  getAllRating,
-  averageRating,
-  overallRatingDy,
-};
+module.exports = { getFoodIssues, submitReview, getVendorReviews, getIssueStatistics };

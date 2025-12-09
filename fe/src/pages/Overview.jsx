@@ -1,23 +1,23 @@
 import { useEffect, useState } from "react";
-
 import { StatCard } from "@/components/cards/StatCard";
 import { OverviewRating } from "@/components/charts/OverviewRating";
 import { OverviewNutrition } from "@/components/charts/OverviewNutrition";
-import api_url from "../util/url";
+import api_url, { IS_MOCK } from "../util/url";
 
-const USE_MOCK = true;
+// IMPORT DATA MOCK
+import { MOCK_OVERVIEW_KPI, MOCK_OVERVIEW_RATINGS, MOCK_OVERVIEW_QUALITY } from "@/data/mockData";
 
 export default function OverviewPage() {
   const [kpis, setKpis] = useState({
-    mealsAnalyzed: 1234,
-    feedbackRate: 73.8,
-    averageRating: 4.6,
-    nutritionCompliance: 71.6,
+    mealsAnalyzed: 0,
+    feedbackRate: 0, // Backend mengirim total_feedback (jumlah), bukan rate (%)
+    averageRating: 0,
+    nutritionCompliance: 0,
     deltas: {
-      mealsAnalyzed: 1.47,
-      feedbackRate: -0.59,
-      averageRating: -3.4,
-      nutritionCompliance: 11.22,
+      mealsAnalyzed: 0,
+      feedbackRate: 0,
+      averageRating: 0,
+      nutritionCompliance: 0,
     },
   });
   const [ratings, setRatings] = useState([]);
@@ -27,82 +27,67 @@ export default function OverviewPage() {
     let cancelled = false;
 
     async function fetchAll() {
-      if (USE_MOCK) {
-        const mockKpis = {
-          mealsAnalyzed: 1234,
-          feedbackRate: 73.8,
-          averageRating: 4.6,
-          nutritionCompliance: 71.6,
-          deltas: {
-            mealsAnalyzed: 1.47,
-            feedbackRate: -0.59,
-            averageRating: -3.4,
-            nutritionCompliance: 11.22,
-          },
-        };
-
-        const mockRatings = [
-          { rating: 1, count: 115 },
-          { rating: 2, count: 164 },
-          { rating: 3, count: 145 },
-          { rating: 4, count: 123 },
-          { rating: 5, count: 112 },
-        ];
-
-        const mockQuality = [
-          { label: "Good", value: 46 },
-          { label: "Fair", value: 36 },
-          { label: "Poor", value: 18 },
-        ];
-
+      // --- LOGIKA MOCK ---
+      if (IS_MOCK) {
         if (!cancelled) {
-          setKpis(mockKpis);
-          setRatings(mockRatings);
-          setQuality(mockQuality);
+          setKpis(MOCK_OVERVIEW_KPI);
+          setRatings(MOCK_OVERVIEW_RATINGS);
+          setQuality(MOCK_OVERVIEW_QUALITY);
         }
         return;
+      }
+
+      // --- LOGIKA REAL API ---
+      try {
+          const vendorData = JSON.parse(localStorage.getItem("vendor_data"));
+          const vendorId = vendorData?.vendor_id;
+
+          if (!vendorId) return;
+
+          // 1. Fetch KPI Stats & Charts sekaligus (Parallel)
+          // Note: Backend Anda menggunakan method POST untuk stats sesuai route vendor.route.js
+          const [statsRes, chartRes] = await Promise.all([
+             api_url.post(`/vendor/${vendorId}/stats`), 
+             api_url.get(`/vendor/${vendorId}/charts`)
+          ]);
+
+          if (!cancelled && statsRes.data) {
+             const { meals_analyzed, nutrition_compliance, total_feedback, average_rating } = statsRes.data;
+             
+             setKpis(prev => ({
+                 ...prev,
+                 mealsAnalyzed: meals_analyzed,
+                 nutritionCompliance: nutrition_compliance,
+                 feedbackRate: total_feedback, // Menampilkan total count
+                 averageRating: average_rating
+             }));
+          }
+
+          if (!cancelled && chartRes.data) {
+             // Mapping Distribusi Rating (Bar Chart)
+             if (chartRes.data.rating_distribution) {
+                // Format Backend: { star: 1, count: 5 } -> Frontend: { rating: 1, count: 5 }
+                const fmtRatings = chartRes.data.rating_distribution.map(item => ({
+                    rating: item.star,
+                    count: item.count
+                }));
+                setRatings(fmtRatings);
+             }
+
+             // Mapping Kualitas Nutrisi (Donut Chart)
+             if (chartRes.data.quality_distribution) {
+                // Backend sudah mengirim format { name, value }, tinggal tambah warna jika perlu di komponen
+                setQuality(chartRes.data.quality_distribution);
+             }
+          }
+
+      } catch (e) {
+          console.error("API Error Overview:", e);
       }
     }
 
     fetchAll();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    api_url
-      // HARDCODED DATE FIRST!
-      .get("/review/average_rating/2025-11-17")
-      .then((r) => {
-        const res = r.data;
-        const avg = res.payload[0].avg;
-        console.log(res.payload[0].avg);
-
-        setKpis((p) => ({
-          ...p,
-          averageRating: Math.round(avg * 10) / 10,
-        }));
-      })
-      .catch((e) => {
-        console.error(e);
-      });
-
-    api_url
-      .get("/review/overall_rating_dy/2025-11-17")
-      .then((r) => {
-        const res = r.data;
-        const payload = res.payload;
-        const fmtPayload = payload.map(({ reting: rating, ...rest }) => ({
-          rating,
-          ...rest,
-        }));
-        console.log(fmtPayload);
-        setRatings(fmtPayload);
-      })
-      .catch((e) => {
-        console.error(e);
-      });
+    return () => { cancelled = true; };
   }, []);
 
   return (

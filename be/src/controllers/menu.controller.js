@@ -1,115 +1,167 @@
 const db = require("../models/database");
+const logger = require("../utils/logger");
 
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  // The +1 makes it inclusive (so '10' is possible)
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+// Helper untuk item acak
+const getRandomItem = (arr) => {
+  if (!arr || arr.length === 0) return null;
+  return arr[Math.floor(Math.random() * arr.length)];
+};
 
-const createMenu = async (req, res) => {
+// 1. Generate Rekomendasi (Logic Sama, Output JSON)
+const getMenuRecommendations = async (req, res) => {
   try {
-    const today = new Date();
+    const result = await db.query("SELECT name, class FROM food_material");
+    const foods = result.rows;
 
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, "0");
-    const day = today.getDate().toString().padStart(2, "0");
-
-    const kinou = `${year}-${month}-${day - 1}`;
-    const ototoi = `${year}-${month}-${day - 2}`;
-    const kyou = `${year}-${month}-${day}`;
-
-    const getMenus = await db.query(
-      "SELECT * FROM menu WHERE date=$1 OR date=$2",
-      [kinou, ototoi]
-    );
-
-    const getFoods = await db.query("SELECT name, class FROM food_material");
-
-    const firstCohort = getMenus.rows[0].foods;
-    const secondCohort = getMenus.rows[1].foods;
-
-    console.log(firstCohort);
-    console.log(secondCohort);
-
-    const thirdCohort = getFoods.rows;
-
-    console.log(thirdCohort);
-
-    const firstLegion = new Set([...firstCohort, ...secondCohort]);
-
-    const firstFilter = thirdCohort.filter((i) => !firstLegion.has(i.name));
-
-    console.log(firstFilter);
-
-    const firstGrouping = firstFilter.reduce((a, i) => {
-      if (!a[i.class]) {
-        a[i.class] = [];
-      }
-
-      a[i.class].push(i);
-
-      return a;
-    }, {});
-
-    console.log(firstGrouping);
-
-    const finalLesson = [];
-
-    finalLesson.push(
-      firstGrouping.karbo[getRandomInt(0, firstGrouping.karbo.length - 1)]
-    );
-
-    let counter = [2, 1, 1];
-
-    counter.sort(() => Math.random - 0.5);
-
-    let ctrl = 0;
-    while (ctrl < 3) {
-      while (counter[ctrl] > 0) {
-        if (ctrl == 0) {
-          finalLesson.push(
-            firstGrouping.protein[
-              getRandomInt(0, firstGrouping.protein.length - 1)
-            ]
-          );
-        } else if (ctrl == 1) {
-          finalLesson.push(
-            firstGrouping.sayuran[
-              getRandomInt(0, firstGrouping.sayuran.length - 1)
-            ]
-          );
-        } else if (ctrl == 2) {
-          finalLesson.push(
-            firstGrouping.buah[getRandomInt(0, firstGrouping.buah.length - 1)]
-          );
-        }
-        counter[ctrl]--;
-      }
-      ctrl++;
+    if (foods.length === 0) {
+      return res.status(404).json({ msg: "Database bahan makanan kosong!" });
     }
 
-    console.log(finalLesson);
+    const grouped = {
+      Karbo: foods.filter(f => /karbo|carbo/i.test(f.class)),
+      Protein: foods.filter(f => /protein|lauk/i.test(f.class)),
+      Sayur: foods.filter(f => /sayur|vegetable/i.test(f.class)),
+      Buah: foods.filter(f => /buah|fruit/i.test(f.class)),
+      Minum: foods.filter(f => /minum|drink|susu/i.test(f.class)) 
+    };
 
-    const saigo = finalLesson.map((i) => i.name);
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const recommendations = {};
 
-    console.log(saigo);
-
-    const lastInsert = await db.query(
-      "INSERT INTO menu (date, foods) VALUES ($1,$2) RETURNING *",
-      [kyou, saigo]
-    );
-
-    return res.status(200).json({
-      msg: "Ok",
-      payload: lastInsert.rows,
+    days.forEach(day => {
+      recommendations[day] = {};
+      for (let i = 1; i <= 4; i++) {
+        const karbo = getRandomItem(grouped.Karbo);
+        const protein = getRandomItem(grouped.Protein);
+        const sayur = getRandomItem(grouped.Sayur);
+        const buah = getRandomItem(grouped.Buah);
+        const minum = getRandomItem(grouped.Minum);
+        
+        recommendations[day][`Plan ${i}`] = [
+          karbo ? karbo.name : "Nasi Putih",
+          protein ? protein.name : "Telur Dadar",
+          sayur ? sayur.name : "Tumis Kangkung",
+          buah ? buah.name : "Pisang",
+          minum ? minum.name : "Air Putih"
+        ];
+      }
     });
+
+    return res.status(200).json({ msg: "Generated", payload: recommendations });
   } catch (e) {
-    console.error(e.message);
+    logger.error(`[Menu Rec Error]: ${e.message}`);
     return res.status(500).send("Server error");
   }
 };
 
+// 2. Simpan Menu Mingguan (REVISI: Simpan Per Tanggal)
+const saveWeeklyPlan = async (req, res) => {
+  const { vendor_id, weeklyPlan, startDate } = req.body; 
+  // startDate format: "YYYY-MM-DD" (Hari Senin dari minggu tersebut)
+
+  if (!weeklyPlan || !vendor_id || !startDate) {
+      return res.status(400).json({ msg: "Data tidak lengkap (Butuh startDate)." });
+  }
+
+  const client = await db.pool?.connect ? await db.pool.connect() : { query: db.query, release: () => {} }; // Fallback jika db wrapper beda
+
+  try {
+    // Loop 5 Hari (Senin - Jumat)
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    
+    // Kita proses satu per satu
+    for (let i = 0; i < 5; i++) {
+        const dayName = days[i];
+        const dayData = weeklyPlan[dayName];
+
+        if (dayData) {
+            // Hitung tanggal untuk hari ini (Senin + i hari)
+            const currentObjDate = new Date(startDate);
+            currentObjDate.setDate(currentObjDate.getDate() + i);
+            const dateStr = currentObjDate.toISOString().split('T')[0];
+
+            // Format makanan ke Array String sederhana untuk Database
+            // Struktur dayData dari frontend: { Carbohydrate: ["Nasi"], Protein: ["Ayam"] ... }
+            const foodArray = [
+                dayData.Carbohydrate?.[0] || "-",
+                dayData.Protein?.[0] || "-",
+                dayData.Vegetables?.[0] || "-",
+                dayData.Fruit?.[0] || "-",
+                dayData.Drink?.[0] || "-"
+            ];
+
+            // 1. Hapus menu lama di tanggal tersebut (jika ada) - Upsert manual
+            await db.query("DELETE FROM menu WHERE vendor_id = $1 AND date = $2", [vendor_id, dateStr]);
+            
+            // 2. Insert menu baru
+            await db.query(
+                "INSERT INTO menu (vendor_id, date, foods) VALUES ($1, $2, $3)",
+                [vendor_id, dateStr, foodArray]
+            );
+        }
+    }
+    
+    logger.info(`[Menu] Saved weekly plan starting ${startDate}`);
+    return res.status(201).json({ msg: "Menu berhasil disimpan!" });
+
+  } catch (e) {
+    logger.error(`[Menu Save Error]: ${e.message}`);
+    return res.status(500).send("Gagal menyimpan menu.");
+  } finally {
+    // client.release(); // Uncomment jika pakai pool.connect manual
+  }
+};
+
+// 3. Ambil Menu Berdasarkan Range Tanggal (Mingguan)
+const getWeeklyMenu = async (req, res) => {
+  const { vendor_id } = req.params;
+  const { startDate, endDate } = req.query; // YYYY-MM-DD
+
+  try {
+    const result = await db.query(
+      `SELECT date, foods FROM menu 
+       WHERE vendor_id = $1 AND date >= $2 AND date <= $3`,
+      [vendor_id, startDate, endDate]
+    );
+
+    // Format balik ke struktur Frontend (Mapping Date -> Day Name)
+    const formattedPayload = {};
+    const daysMap = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    result.rows.forEach(row => {
+        const d = new Date(row.date);
+        const dayName = daysMap[d.getDay()]; // Ambil nama hari dari tanggal
+
+        // Kembalikan ke struktur { Carbohydrate: [], ... }
+        if (dayName && row.foods) {
+            formattedPayload[dayName] = {
+                day: dayName,
+                selectedPlanName: "Custom / Saved",
+                Carbohydrate: [row.foods[0]],
+                Protein: [row.foods[1]],
+                Vegetables: [row.foods[2]],
+                Fruit: [row.foods[3]],
+                Drink: [row.foods[4]]
+            };
+        }
+    });
+
+    return res.status(200).json({ payload: formattedPayload });
+
+  } catch (e) {
+    logger.error(`[Menu Get Error]: ${e.message}`);
+    return res.status(500).send("Server error");
+  }
+};
+
+// Endpoint legacy (optional, agar tidak error jika dipanggil)
+const getActiveMenu = async (req, res) => {
+    return res.status(200).json({ payload: null, msg: "Deprecated. Use getWeeklyMenu" });
+};
+
 module.exports = {
-  createMenu,
+  getMenuRecommendations,
+  saveWeeklyPlan,
+  getWeeklyMenu,
+  getActiveMenu
 };
