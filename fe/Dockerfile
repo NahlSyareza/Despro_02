@@ -1,15 +1,9 @@
 # Tahap 1: Build React
-FROM node:22-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-
-ARG VITE_API_BASE_URL
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-ARG VITE_USE_MOCK
-ENV VITE_USE_MOCK=$VITE_USE_MOCK
-
 # Build menjadi file statis (HTML/CSS/JS)
 RUN npm run build
 
