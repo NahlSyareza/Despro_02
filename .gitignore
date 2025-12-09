@@ -1,4 +1,5 @@
 be/.env
-
+be/logs
 be/node_modules
+
 fe/node_modules
