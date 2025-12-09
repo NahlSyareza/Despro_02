@@ -3,4 +3,5 @@ be/logs
 be/node_modules
 
 fe/node_modules
+fe/.env
 docker-compose.yml
