@@ -55,16 +55,21 @@ def load_nutrition_data():
     except Exception as e:
         print(f"❌ Gagal mengambil data dari DB: {e}")
 
-# --- HELPER: HITUNG SKOR KEPATUHAN GIZI (BARU) ---
+# --- HELPER: HITUNG SKOR KEPATUHAN GIZI (DIPERBAIKI) ---
 def calculate_compliance_score(nutrition):
     """
     Menghitung skor (0-100) berdasarkan standar makan siang anak sekolah.
     Bobot: Kalori (40%) + Protein (30%) + Lemak (15%) + Karbo (15%)
     """
+    
+    # [FIX] 1. CEK PLATE KOSONG
+    # Jika kalori sangat rendah (< 50), anggap piring kosong/salah deteksi.
+    if nutrition['calories'] < 50:
+        return 0.0
+
     score = 0.0
     
-    # 1. SKOR KALORI (Maks 40 Poin)
-    # Target Ideal: 550 - 750 kkal
+    # 2. SKOR KALORI (Maks 40 Poin)
     cal = nutrition['calories']
     if 550 <= cal <= 750:
         score += 40
@@ -73,10 +78,13 @@ def calculate_compliance_score(nutrition):
     elif 350 <= cal < 450 or 850 < cal <= 950:
         score += 15
     else:
-        score += 5 # Terlalu ekstrem (sangat sedikit/banyak)
+        # [FIX] Jika kalori terlalu rendah (<350) atau terlalu ekstrem, skor 0 atau 5
+        if cal < 100: 
+            score += 0 # Terlalu sedikit
+        else:
+            score += 5 # Ada makanan tapi porsi salah
 
-    # 2. SKOR PROTEIN (Maks 30 Poin) - Zat Pertumbuhan
-    # Target Ideal: > 20 gram
+    # 3. SKOR PROTEIN (Maks 30 Poin)
     pro = nutrition['protein']
     if pro >= 20:
         score += 30
@@ -87,25 +95,29 @@ def calculate_compliance_score(nutrition):
     else:
         score += 0 # Sangat kurang protein
 
-    # 3. SKOR LEMAK (Maks 15 Poin) - Batasi Lemak
-    # Target Ideal: < 25 gram
+    # 4. SKOR LEMAK (Maks 15 Poin)
     fat = nutrition['fat']
-    if fat <= 25:
+    # [FIX] Logika Lemak: Jangan beri nilai penuh jika lemak 0 (tidak realistis untuk meal lengkap)
+    if 5 <= fat <= 25: 
         score += 15
+    elif fat < 5: # Terlalu sedikit lemak (kurang gurih/energi)
+        score += 5
     elif 25 < fat <= 35:
         score += 10
     else:
-        score += 5 # Terlalu berminyak
+        score += 0 # Terlalu berminyak (>35)
 
-    # 4. SKOR KARBOHIDRAT (Maks 15 Poin)
-    # Target Ideal: 50 - 100 gram
+    # 5. SKOR KARBOHIDRAT (Maks 15 Poin)
     carb = nutrition['carbohydrate']
     if 50 <= carb <= 100:
         score += 15
     elif 30 <= carb < 50 or 100 < carb <= 130:
         score += 10
     else:
-        score += 5
+        if carb < 10:
+            score += 0 # Hampir tidak ada karbo
+        else:
+            score += 5
 
     return round(score, 1)
 
@@ -161,13 +173,13 @@ async def predict_meal(file: UploadFile = File(...)):
                 class_name = model.names[class_id].lower().replace(" ", "_")
                 confidence = float(box.conf[0])
 
+                # Ambang batas confidence
                 if confidence > 0.4:
                     detected_items.append(class_name)
                     
-                    # Ambil Nutrisi (Fallback ke Default jika tidak ada di DB)
+                    # Ambil Nutrisi
                     nutri = NUTRITION_DB.get(class_name, DEFAULT_NUTRI)
                     
-                    # Handle perbedaan nama key (cal vs calories) dari DB vs Default
                     cal = nutri.get("cal", nutri.get("calories", 0))
                     fat = nutri.get("fat", nutri.get("fat", 0))
                     pro = nutri.get("pro", nutri.get("protein", 0))
@@ -178,7 +190,7 @@ async def predict_meal(file: UploadFile = File(...)):
                     total_vals["protein"] += float(pro)
                     total_vals["carbohydrate"] += float(carb)
 
-        # --- LOGIKA SKOR BARU DI SINI ---
+        # Hitung Skor
         score = calculate_compliance_score(total_vals)
 
         return {
