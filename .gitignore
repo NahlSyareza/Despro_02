@@ -1,6 +1,10 @@
 be/.env
 be/logs
 be/node_modules
+be/uploads/*
+
+# TAPI, jangan ignore file .gitkeep (agar folder uploads tetap ada di repo)
+be/!uploads/.gitkeep
 
 fe/node_modules
 fe/.env

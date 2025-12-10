@@ -4,8 +4,8 @@ import { ChevronLeft, ChevronRight, Filter, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { IS_MOCK, getImageUrl, API_BASE_URL } from "@/util/url" 
-import axios from "axios"
+import api_url, { IS_MOCK, getImageUrl } from "@/util/url" 
+// import axios from "axios"  <-- HAPUS INI
 import { Badge } from "@/components/ui/badge"
 
 // IMPORT DATA MOCK
@@ -28,7 +28,6 @@ export default function TrayLog() {
       if (IS_MOCK) {
         console.log("🛠️ TrayLog: Using Mock Data")
         setTimeout(() => {
-            // GUNAKAN DATA IMPORT
             setLogs(MOCK_TRAY_LOGS)
             setLoading(false)
         }, 500)
@@ -37,7 +36,10 @@ export default function TrayLog() {
         try {
             const vendorData = JSON.parse(localStorage.getItem("vendor_data"));
             const vendorId = vendorData?.vendor_id;
-            const res = await axios.get(`${API_BASE_URL}/tray/log/${vendorId}`)
+            
+            // 2. GUNAKAN api_url (Otomatis ada Token Header)
+            // Hapus ${API_BASE_URL} karena sudah diset di config axios-nya
+            const res = await api_url.get(`/tray/log/${vendorId}`)
             
             // Mapping data API ke format tabel UI
             const formattedData = (res.data.payload || []).map(item => ({
@@ -47,11 +49,21 @@ export default function TrayLog() {
                 calories: item.calories,
                 fat: item.fat,
                 protein: item.protein,
-                carbs: item.carbohydrate,
+                
+                // PERBAIKAN PENTING:
+                // Di database namanya 'carbohydrate', di tabel UI kita pakai 'carbs'
+                carbs: item.carbohydrate, 
+                
                 compliance_score: item.compliance_score,
-                image_path: item.image_path
+                
+                // Di database namanya 'image', di tabel UI kita pakai 'image_path'
+                image_path: item.image 
             }))
-            setLogs(res.data.payload) // Sesuaikan mapping
+
+            // --- PERBAIKAN DI SINI ---
+            // Gunakan formattedData, JANGAN res.data.payload
+            setLogs(formattedData) 
+            
             setLoading(false)
         } catch (error) {
             console.error("Gagal fetch data:", error)
