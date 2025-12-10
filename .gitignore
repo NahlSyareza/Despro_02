@@ -8,4 +8,5 @@ be/!uploads/.gitkeep
 
 fe/node_modules
 fe/.env
+
 docker-compose.yml
