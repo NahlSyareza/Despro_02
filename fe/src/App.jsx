@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "sonner"; // <--- IMPORT INI
+import { NotificationProvider } from "./context/NotificationContext";
 import Navigation from "./components/Navigation";
 import MealPlanner from "./pages/MealPlanner";
 import Analytics from "./pages/Analytics";
@@ -48,7 +49,9 @@ function Layout() {
 export default function App() {
   return (
     <Router>
-      <Layout />
+      <NotificationProvider>
+        <Layout />
+      </NotificationProvider>
     </Router>
   );
 }

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const auth = require("../middleware/auth.middleware");
 const c = require("../controllers/tray.controller");
 const multer = require("multer");
 const path = require("path");
@@ -21,7 +22,8 @@ const upload = multer({ storage: storage });
 // --- Routes ---
 
 // GET Log
-router.get("/log/:vendor_id", c.log);
+router.get("/log/:vendor_id", auth, c.log);
+router.get("/events", auth, c.eventsHandler);
 
 // POST Upload (Digunakan oleh IoT Raspi)
 // 'image' adalah key yang kita set di script python IoT (files = {'image': f})

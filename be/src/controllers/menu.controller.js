@@ -2,10 +2,7 @@ const db = require("../models/database");
 const logger = require("../utils/logger");
 
 // Helper untuk item acak
-const getRandomItem = (arr) => {
-  if (!arr || arr.length === 0) return null;
-  return arr[Math.floor(Math.random() * arr.length)];
-};
+const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 // 1. Generate Rekomendasi (Logic Sama, Output JSON)
 const getMenuRecommendations = async (req, res) => {
@@ -51,6 +48,93 @@ const getMenuRecommendations = async (req, res) => {
   } catch (e) {
     logger.error(`[Menu Rec Error]: ${e.message}`);
     return res.status(500).send("Server error");
+  }
+};
+
+const getSmartRecommendation = async (req, res) => {
+  const { vendor_id } = req.params;
+
+  try {
+    // 1. Logika Cerdas: Cari menu sukses di masa lalu
+    const highRatedMenus = await db.query(`
+      SELECT m.foods 
+      FROM menu m
+      JOIN review r ON m.date = r.date AND m.vendor_id = r.vendor_id
+      WHERE m.vendor_id = $1
+      GROUP BY m.menu_id
+      HAVING AVG(r.rating) >= 4.0
+    `, [vendor_id]);
+
+    let foodPool = [];
+    if (highRatedMenus.rows.length > 0) {
+      highRatedMenus.rows.forEach(row => {
+        // row.foods adalah array ["Nasi", "Ayam", ...]
+        // Filter nilai "-" atau null
+        const validFoods = row.foods.filter(f => f && f !== "-");
+        foodPool = [...foodPool, ...validFoods];
+      });
+      foodPool = [...new Set(foodPool)]; // Unik
+    }
+
+    // 2. Ambil referensi bahan makanan (agar tahu mana Karbo/Protein)
+    let queryMaterial;
+    if (foodPool.length > 0) {
+      queryMaterial = await db.query(
+        "SELECT name, class FROM food_material WHERE name = ANY($1)", 
+        [foodPool]
+      );
+    } else {
+      // Fallback: Ambil semua jika history kosong
+      queryMaterial = await db.query("SELECT name, class FROM food_material");
+    }
+
+    const materials = queryMaterial.rows;
+    
+    // Helper filter regex yang sama dengan fungsi lama Anda
+    const carbs = materials.filter(f => /karbo|carbo/i.test(f.class));
+    const proteins = materials.filter(f => /protein|lauk/i.test(f.class));
+    const veggies = materials.filter(f => /sayur|vegetable/i.test(f.class));
+    const fruits = materials.filter(f => /buah|fruit/i.test(f.class));
+    const drinks = materials.filter(f => /minum|drink|susu/i.test(f.class));
+
+    // Validasi data
+    if (!carbs.length || !proteins.length) {
+       return res.status(400).json({ msg: "Data bahan makanan tidak cukup." });
+    }
+
+    // 3. Generate Struktur Menu Mingguan (Format Frontend)
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const smartMenu = {};
+
+    days.forEach(day => {
+       // Ambil item acak
+       const c = getRandomItem(carbs)?.name || "Nasi Putih";
+       const p = getRandomItem(proteins)?.name || "Telur Dadar";
+       const v = getRandomItem(veggies)?.name || "Tumis Sayur";
+       const f = getRandomItem(fruits)?.name || "Pisang";
+       const d = getRandomItem(drinks)?.name || "Air Mineral";
+
+       // Sesuaikan format dengan Frontend (SelectedMenu.jsx)
+       smartMenu[day] = {
+          day: day,
+          selectedPlanName: "AI Recommended",
+          Carbohydrate: [c],
+          Protein: [p],
+          Vegetables: [v],
+          Fruit: [f],
+          Drink: [d]
+       };
+    });
+
+    res.json({
+       status: "success",
+       source: foodPool.length > 0 ? "historical_best" : "random_balanced",
+       payload: smartMenu 
+    });
+
+  } catch (error) {
+    logger.error(`[Smart Rec] Error: ${error.message}`);
+    res.status(500).json({ msg: "Server Error" });
   }
 };
 
@@ -163,5 +247,6 @@ module.exports = {
   getMenuRecommendations,
   saveWeeklyPlan,
   getWeeklyMenu,
-  getActiveMenu
+  getActiveMenu,
+  getSmartRecommendation
 };

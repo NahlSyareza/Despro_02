@@ -2,20 +2,23 @@ import { useState, useEffect } from "react";
 import api_url, { IS_MOCK } from "@/util/url";
 import { MOCK_MENU_RECOMMENDATIONS } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
-import { Save, Trash2, Calendar, ChevronLeft, ChevronRight, X, ChevronRight as ChevronRightSmall, Plus } from "lucide-react";
+import { Save, Trash2, Calendar, ChevronLeft, ChevronRight, X, ChevronRight as ChevronRightSmall, Plus, Sparkles, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner"; // <--- IMPORT TOAST
+import { toast } from "sonner";
 
 export default function MealPlanner() {
   // --- STATE TANGGAL ---
-  const [currentDate, setCurrentDate] = useState(new Date()); // Tanggal acuan (Bulan/Tahun)
-  const [selectedWeekIndex, setSelectedWeekIndex] = useState(0); // Minggu ke-berapa yang dipilih (0-4)
+  const [currentDate, setCurrentDate] = useState(new Date()); 
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(0); 
   
   // --- STATE DATA ---
-  const [menuItems, setMenuItems] = useState({}); // Rekomendasi Plan
-  const [weeklyMenuData, setWeeklyMenuData] = useState({}); // Data Menu Tersimpan
+  const [menuItems, setMenuItems] = useState({}); // Rekomendasi Plan (untuk Modal)
+  const [weeklyMenuData, setWeeklyMenuData] = useState({}); // Data Menu Tersimpan/Aktif
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // State baru untuk loading AI
+  const [loadingAuto, setLoadingAuto] = useState(false);
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,30 +27,19 @@ export default function MealPlanner() {
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
   // --- HELPER DATE ---
-  // Mendapatkan tanggal awal (Senin) untuk minggu ke-n di bulan yang dipilih
   const getWeekStartDate = (dateObj, weekIndex) => {
     const year = dateObj.getFullYear();
     const month = dateObj.getMonth();
-    
-    // Tanggal 1 bulan ini
     const firstDayOfMonth = new Date(year, month, 1);
-    
-    // Cari Senin pertama di bulan ini (atau Senin sebelumnya jika tgl 1 bukan Senin)
-    // Day 0=Sun, 1=Mon. 
     const dayOfWeek = firstDayOfMonth.getDay(); 
-    const diff = firstDayOfMonth.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust to Monday
-    
+    const diff = firstDayOfMonth.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); 
     const firstMonday = new Date(firstDayOfMonth.setDate(diff));
-    
-    // Tambah 7 hari * weekIndex
     const targetMonday = new Date(firstMonday);
     targetMonday.setDate(firstMonday.getDate() + (weekIndex * 7));
-    
     return targetMonday;
   };
 
   const currentWeekStart = getWeekStartDate(currentDate, selectedWeekIndex);
-
 
   const formatDateLocal = (date) => {
     const year = date.getFullYear();
@@ -56,11 +48,10 @@ export default function MealPlanner() {
     return `${year}-${month}-${day}`;
   };
 
-  // --- 1. FETCH DATA (SAAT MINGGU BERUBAH) ---
+  // --- 1. FETCH DATA ---
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      // Reset tampilan menu saat ganti minggu
       setWeeklyMenuData({}); 
 
       try {
@@ -70,18 +61,16 @@ export default function MealPlanner() {
           return;
         }
 
-        // 1. Ambil Rekomendasi (sekali saja cukup, tapi ditaruh sini gpp)
+        // 1. Ambil Opsi Plan (untuk Modal Manual)
         const recRes = await api_url.get("/menu/recommendations");
         if (recRes.data?.payload) setMenuItems(recRes.data.payload);
 
-        // 2. Ambil Menu Tersimpan dari Backend untuk MINGGU INI
+        // 2. Ambil Menu Tersimpan Minggu Ini
         const vendorData = JSON.parse(localStorage.getItem("vendor_data") || "{}");
         if (vendorData.vendor_id) {
-            // Hitung Start Date (Senin) dan End Date (Jumat)
             const startStr = formatDateLocal(currentWeekStart);
-            
             const endObj = new Date(currentWeekStart);
-            endObj.setDate(endObj.getDate() + 6); // Ambil range seminggu penuh
+            endObj.setDate(endObj.getDate() + 6); 
             const endStr = formatDateLocal(endObj);
 
             const menuRes = await api_url.get(`/menu/${vendorData.vendor_id}/week?startDate=${startStr}&endDate=${endStr}`);
@@ -97,14 +86,14 @@ export default function MealPlanner() {
       }
     }
     fetchData();
-  }, [currentDate, selectedWeekIndex]); // Trigger saat bulan/minggu berubah
+  }, [currentDate, selectedWeekIndex]);
 
   // --- HANDLERS NAVIGASI ---
   const changeMonth = (dir) => {
       const newDate = new Date(currentDate);
       newDate.setMonth(newDate.getMonth() + dir);
       setCurrentDate(newDate);
-      setSelectedWeekIndex(0); // Reset ke minggu pertama
+      setSelectedWeekIndex(0); 
   };
 
   // --- HANDLERS MENU ---
@@ -143,6 +132,41 @@ export default function MealPlanner() {
     toast.info(`Menu ${day} dihapus.`);
   };
 
+  // --- FITUR BARU: SMART AUTO-FILL ---
+  const handleSmartAutoFill = async () => {
+    setLoadingAuto(true);
+    try {
+        const vendorData = JSON.parse(localStorage.getItem("vendor_data") || "{}");
+        if (!vendorData.vendor_id) return toast.error("Silakan login ulang.");
+
+        // Panggil endpoint khusus Smart Fill
+        const res = await api_url.get(`/menu/smart-fill/${vendorData.vendor_id}`);
+        const smartMenu = res.data.payload; // Format: { Monday: {...}, Tuesday: {...} }
+
+        // Update state weeklyMenuData (Timpa data yang ada atau gabungkan)
+        // Di sini kita gabungkan: jika hari sudah ada isinya, kita timpa dengan rekomendasi baru
+        setWeeklyMenuData(prev => ({
+            ...prev,
+            ...smartMenu
+        }));
+
+        const sourceMsg = res.data.source === "historical_best" 
+            ? "Berdasarkan menu rating tinggi Anda!" 
+            : "Menu gizi seimbang (Randomized)";
+            
+        toast.success("Menu Mingguan Terisi Otomatis! ✨", {
+            description: sourceMsg
+        });
+
+    } catch (error) {
+        console.error("Auto fill error:", error);
+        toast.error("Gagal generate rekomendasi otomatis.");
+    } finally {
+        setLoadingAuto(false);
+    }
+  };
+
+  // --- SAVE ---
   const handleSave = async () => {
     const vendorData = JSON.parse(localStorage.getItem("vendor_data") || "{}");
     if (!vendorData.vendor_id) return toast.error("Anda harus login terlebih dahulu.");;
@@ -151,13 +175,12 @@ export default function MealPlanner() {
     const toastId = toast.loading("Menyimpan menu mingguan...");
 
     try {
-      // Kirim tanggal Senin minggu ini sebagai referensi penyimpanan
       const startStr = formatDateLocal(currentWeekStart);
       
       await api_url.post("/menu/save", {
         vendor_id: vendorData.vendor_id,
         weeklyPlan: weeklyMenuData,
-        startDate: startStr // Kirim tanggal lokal yang benar (Senin)
+        startDate: startStr 
       });
       
       toast.success("Menu berhasil disimpan ke database!", { id: toastId });
@@ -169,7 +192,6 @@ export default function MealPlanner() {
     }
   };
 
-  // Format Header Bulan: "December 2025"
   const monthLabel = currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
@@ -187,14 +209,32 @@ export default function MealPlanner() {
           </p>
         </div>
         
-        <Button 
-            onClick={handleSave} 
-            disabled={saving}
-            className="bg-[#7B5EEA] hover:bg-[#6a4fea] text-white gap-2 shadow-md w-full md:w-auto"
-        >
-            <Save size={16} />
-            {saving ? "Saving..." : "Save Changes"}
-        </Button>
+        <div className="flex gap-3 w-full md:w-auto">
+            {/* TOMBOL AI SMART FILL (BARU) */}
+            <Button 
+                onClick={handleSmartAutoFill} 
+                disabled={loadingAuto || loading}
+                variant="outline"
+                className="bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50 shadow-sm transition-all gap-2 w-full md:w-auto"
+            >
+                {loadingAuto ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                    <Sparkles className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                )}
+                AI Smart Fill
+            </Button>
+
+            {/* TOMBOL SAVE */}
+            <Button 
+                onClick={handleSave} 
+                disabled={saving}
+                className="bg-[#7B5EEA] hover:bg-[#6a4fea] text-white gap-2 shadow-md w-full md:w-auto"
+            >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={16} />}
+                {saving ? "Saving..." : "Save Changes"}
+            </Button>
+        </div>
       </div>
 
       {/* --- 1. MONTH SCROLLER --- */}
@@ -216,7 +256,6 @@ export default function MealPlanner() {
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex gap-2 overflow-x-auto pb-2">
             {[0, 1, 2, 3, 4].map((idx) => {
-                // Hitung label tanggal untuk tombol (misal: "Dec 8 - 12")
                 const weekStart = getWeekStartDate(currentDate, idx);
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekEnd.getDate() + 4);
@@ -242,20 +281,19 @@ export default function MealPlanner() {
         </div>
       </div>
 
-      {/* --- 3. GRID 5 HARI (SAMA SEPERTI SEBELUMNYA) --- */}
+      {/* --- 3. GRID 5 HARI --- */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {days.map((day, idx) => {
             const dayData = weeklyMenuData[day];
             const isFilled = !!dayData;
             
-            // Hitung tanggal spesifik untuk kolom ini
             const thisDate = new Date(currentWeekStart);
             thisDate.setDate(thisDate.getDate() + idx);
             const dateDisplay = thisDate.getDate();
 
             return (
                 <div key={day} className="flex flex-col h-full">
-                    {/* Header Hari dengan Tanggal */}
+                    {/* Header Hari */}
                     <div className={`p-3 rounded-t-xl text-center border-x border-t flex flex-col justify-center ${
                         isFilled ? "bg-[#7B5EEA] text-white border-[#7B5EEA]" : "bg-white text-gray-400 border-gray-200"
                     }`}>
@@ -299,7 +337,7 @@ export default function MealPlanner() {
         })}
       </div>
 
-      {/* MODAL (Kode Sama) */}
+      {/* MODAL MANUAL SELECTION */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">

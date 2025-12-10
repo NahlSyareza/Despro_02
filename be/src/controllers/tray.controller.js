@@ -5,6 +5,48 @@ const fs = require("fs");
 const logger = require("../utils/logger"); // Import Logger
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL;
+// --- TAMBAHAN UNTUK SSE ---
+let clients = []; // Menyimpan koneksi klien yang aktif
+
+const sendEventToVendor = (targetVendorId, data) => {
+  clients.forEach(client => {
+    if (client.vendorId === targetVendorId) {
+      client.res.write(`data: ${JSON.stringify(data)}\n\n`);
+    }
+  });
+};
+
+const eventsHandler = (req, res) => {
+  // KOREKSI: Ambil dari req.user
+  if (!req.user || !req.user.vendor_id) {
+    logger.error("[SSE] Error: req.user is undefined. Middleware auth mungkin belum terpasang.");
+    return res.status(401).json({ msg: "Unauthorized connection" });
+  }
+  
+  const authenticatedVendorId = req.user.vendor_id; 
+
+  const headers = {
+    'Content-Type': 'text/event-stream',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'no-cache'
+  };
+  res.writeHead(200, headers);
+
+  const clientId = Date.now();
+  const newClient = {
+    id: clientId,
+    res,
+    vendorId: authenticatedVendorId // Simpan ID untuk filtering nanti
+  };
+
+  clients.push(newClient);
+  logger.info(`[SSE] Vendor ${authenticatedVendorId} connected. Client ID: ${clientId}`);
+
+  req.on('close', () => {
+    logger.info(`[SSE] Client disconnected: ${clientId}`);
+    clients = clients.filter(client => client.id !== clientId);
+  });
+};
 
 const uploadAndAnalyze = async (req, res) => {
   try {
@@ -39,13 +81,22 @@ const uploadAndAnalyze = async (req, res) => {
       aiResponse = response.data;
       logger.info(`[AI] Success: ${JSON.stringify(aiResponse)}`);
     } catch (aiError) {
-      logger.error(`[AI] Failed: ${aiError.message}`);
+      if (aiError.response) {
+         logger.error(`[AI] Error Response: ${aiError.response.status} - ${JSON.stringify(aiError.response.data)}`);
+      } else if (aiError.request) {
+         // Request terkirim tapi tidak ada jawaban (Network Error)
+         logger.error(`[AI] No Response (Network Error): ${aiError.message}`);
+         if (aiError.code) logger.error(`[AI] Error Code: ${aiError.code}`); // Log ECONNREFUSED dll
+      } else {
+         logger.error(`[AI] Request Setup Error: ${aiError.message}`);
+      }
       
       if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
       
+      // Kirim pesan error yang lebih detail ke frontend
       return res.status(502).json({ 
         message: "AI Service Unavailable", 
-        error: aiError.message 
+        error: aiError.code || aiError.message // Tampilkan kode error (misal ECONNREFUSED)
       });
     }
 
@@ -67,15 +118,34 @@ const uploadAndAnalyze = async (req, res) => {
     ];
 
     const { rows } = await db.query(insertQuery, values);
-
+    const newTray = {
+        tray_id: rows[0].tray_id,
+        date: rows[0].date,
+        compliance_score: aiResponse.compliance_score,
+        ai_analysis: aiResponse,
+        image: dbImagePath
+    };
+    
     logger.info(`[Tray] Saved to DB. New ID: ${rows[0].tray_id}`);
+
+    if (aiResponse.compliance_score < 60) {
+        // Gunakan vendorId yang didapat dari req.body (milik IoT) untuk mencari Client SSE yang cocok
+        sendEventToVendor(vendorId, { 
+            type: 'WARNING',
+            message: 'Kualitas Gizi Rendah Terdeteksi!',
+            data: newTray
+        });
+    } else {
+        sendEventToVendor(vendorId, {
+            type: 'UPDATE',
+            message: 'Nampan baru berhasil diproses',
+            data: newTray
+        });
+    }
 
     res.status(201).json({
       message: "Tray processed",
-      data: {
-        tray_id: rows[0].tray_id,
-        ai_analysis: aiResponse
-      },
+      data: newTray,
     });
 
   } catch (error) {
@@ -110,4 +180,4 @@ const log = async (req, res) => {
   }
 };
 
-module.exports = { log, uploadAndAnalyze };
+module.exports = { log, uploadAndAnalyze, eventsHandler };

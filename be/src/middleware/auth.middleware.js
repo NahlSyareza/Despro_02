@@ -1,11 +1,19 @@
 const jwt = require("jsonwebtoken");
 const logger = require("../utils/logger");
 
+const JWT_SECRET = process.env.JWT_SECRET || "rahasia_negara_api_123";
+
 const verifyToken = (req, res, next) => {
-  // 1. Ambil token dari Header request
-  // Format standard: "Authorization: Bearer <token>"
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Ambil bagian tokennya saja
+  // 1. Coba ambil dari Header
+  let token = req.header("Authorization");
+
+  // 2. Jika tidak ada di header, coba ambil dari Query Param (Khusus SSE)
+  if (!token && req.query.token) {
+    token = req.query.token;
+  } else if (token && token.startsWith("Bearer ")) {
+    // Bersihkan prefix Bearer jika dari header
+    token = token.split(" ")[1];
+  }
 
   if (!token) {
     logger.warn("[Auth] Access Denied: No Token Provided");
@@ -15,9 +23,7 @@ const verifyToken = (req, res, next) => {
   try {
     // 2. Verifikasi Token menggunakan Secret Key
     // Pastikan process.env.JWT_SECRET ada di file .env Anda
-    const secret = process.env.JWT_SECRET || "rahasia_negara_api_123"; 
-    
-    const decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(token, JWT_SECRET);
     
     // 3. Simpan data user yang terdekripsi ke dalam object request
     // Agar controller selanjutnya bisa tahu siapa yang login
