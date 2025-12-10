@@ -1,0 +1,9 @@
+# 1. Konfigurasi Frontend (Akses Web)
+https://nutriguard.digilabdte.com {
+    reverse_proxy frontend:80
+}
+
+# 2. Konfigurasi Backend (Akses API)
+https://nutriguard.api.digilabdte.com {
+    reverse_proxy backend:2001
+}
